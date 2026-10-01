@@ -240,7 +240,7 @@ Install matching `main.js`, `manifest.json`, and `styles.css` into `.obsidian/pl
 
 ## 验证状态
 
-当前会议、资料与原型扩展在提交 `ecaeae5` 通过 105 项核心/安全/模拟原生交互测试，以及 24 项桌面/窄屏浏览器测试；依赖审计为 0。真实 Obsidian 桌面和移动端仍未实测，详见 [验证记录](docs/verification.md)。
+当前会议、资料与原型扩展在提交 `e665e90` 通过 111 项核心/安全/模拟原生交互测试，以及 26 项桌面/窄屏浏览器测试；依赖审计为 0。真实 Obsidian 桌面和移动端仍未实测，详见 [验证记录](docs/verification.md)。
 
 基于模拟 Obsidian API 的契约测试不等于实机测试。尚未完成真实 Obsidian 桌面或移动端验证，也没有社区目录上架声明。
 

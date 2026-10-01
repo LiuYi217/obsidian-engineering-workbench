@@ -4,12 +4,13 @@ The six-view meeting/material/prototype extension remains at package version 0.1
 
 ## Passed
 
-Verified on 2026-10-01. Runtime commit: `ecaeae5d3b7682ec6aa918f4fae3436afc43fcb9`.
+Verified on 2026-10-01. Runtime commit: `e665e90633809ff716a26ff1a26cf4a3c690c0f4`.
 
 - Strict TypeScript, production build and packaging pass
-- **105 tests pass**, including calendar/capacity/baseline/import compatibility, immutable exact version pins, meeting evidence, ZIP security and native interaction contracts
-- **24 Playwright cases pass** on GitHub Actions Ubuntu at desktop 1440px and mobile 390px: all six views, project detail tabs, meeting summary/transcript separation, material version states, responsive layout, filters, task details and keyboard navigation
+- **111 tests pass**, including calendar/capacity/baseline/import compatibility, immutable exact version pins, meeting evidence, ZIP security and native interaction contracts
+- **26 Playwright cases pass** on GitHub Actions Ubuntu at desktop 1440px and mobile 390px: all six views, project detail tabs, meeting summary/transcript separation, material version states, responsive layout, filters, task details and keyboard navigation
 - **0 dependency vulnerabilities** from npm audit; runtime archive helper uses pinned fflate 0.8.3 and includes its MIT license
+- Meeting timestamps are rendered in the host local timezone with an explicit UTC offset. Tests cover UTC+08 round-trip input, offset-equivalent timestamps, midnight rollover, instant ordering, and DST-gap rejection. Browser CI uses Asia/Shanghai and verifies the displayed UTC+08 values
 - CI `main.js`, `manifest.json` and `styles.css` match local artifacts byte-for-byte
 - Twelve genuine CI screenshots were captured. Pixel review verified the principal desktop and narrow-screen views; mobile materials use labeled compact cards, with status/action text kept intact. Inapplicable date filters are absent from meeting/material history views
 
