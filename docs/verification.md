@@ -1,22 +1,26 @@
 # v0.1.0 verification record
 
-## Latest removal patch
+## Unknown task-data compatibility
 
-The global tab help, fictional-record creation feature and empty project-scope scaffold have been removed. The latest local aggregate passes 117 tests, strict TypeScript and production build. Production dependency-graph tests prove fixture data is not bundled; native command-registration and existing-note preservation tests pass. Thirty browser cases are prepared, including all six tabs and empty/scaffold states; remote execution of this removal patch is pending. Earlier verified CI below applies to the pre-removal runtime.
+Empty task dates and null remaining effort are accepted without fabricated values. Co-assignees are retained without duplicating primary allocations. Incomplete schedules/estimates prevent a spare-capacity claim, including project People and weekly summaries. Regression tests cover raw Vault validation, native edit preservation and stale conflicts, JSON/CSV round trips, immutable baselines, and linked meeting dates. The local aggregate passes **137 tests**, strict TypeScript and production build. The browser suite now has **32 cases**; new compatibility cases require the exact-commit CI run. No external work records are included in fixtures.
+
+## Verified removal runtime
+
+The global tab help, fictional-record creation feature and empty project-scope scaffold have been removed. Production dependency-graph tests prove fixture data is not bundled; native command-registration and existing-note preservation tests pass. Existing Vault notes are not deleted or migrated. Empty and legacy-placeholder scope blocks are hidden without changing stored text; real scope content remains visible.
 
 The six-view meeting/material/prototype extension remains at package version 0.1.0 with no release tag created by this task.
 
 ## Passed
 
-Verified on 2026-10-01. Runtime commit: `e665e90633809ff716a26ff1a26cf4a3c690c0f4`.
+Verified on 2026-10-01. Runtime commit: `1a786d835b25ea78a3edc6440245357fdeb30ec2`.
 
 - Strict TypeScript, production build and packaging pass
-- **111 tests pass**, including calendar/capacity/baseline/import compatibility, immutable exact version pins, meeting evidence, ZIP security and native interaction contracts
-- **26 Playwright cases pass** on GitHub Actions Ubuntu at desktop 1440px and mobile 390px: all six views, project detail tabs, meeting summary/transcript separation, material version states, responsive layout, filters, task details and keyboard navigation
+- **117 tests pass**, including calendar/capacity/baseline/import compatibility, immutable exact version pins, meeting evidence, ZIP security and native interaction contracts
+- **30 Playwright cases pass** on GitHub Actions Ubuntu at desktop 1440px and mobile 390px: all six views, project detail tabs, meeting summary/transcript separation, material version states, responsive layout, filters, task details, keyboard navigation, removed-help/creator absence, empty state, and project-scope preservation
 - **0 dependency vulnerabilities** from npm audit; runtime archive helper uses pinned fflate 0.8.3 and includes its MIT license
 - Meeting timestamps are rendered in the host local timezone with an explicit UTC offset. Tests cover UTC+08 round-trip input, offset-equivalent timestamps, midnight rollover, instant ordering, and DST-gap rejection. Browser CI uses Asia/Shanghai and verifies the displayed UTC+08 values
 - CI `main.js`, `manifest.json` and `styles.css` match local artifacts byte-for-byte
-- Twelve genuine CI screenshots were captured. Pixel review verified the principal desktop and narrow-screen views; mobile materials use labeled compact cards, with status/action text kept intact. Inapplicable date filters are absent from meeting/material history views
+- Fourteen genuine CI screenshots were captured. Pixel review checked all six tabs at both viewport sizes and both empty-state views: no removed help or fictional-creator entry remains; mobile materials use labeled compact cards, with status/action text kept intact. Inapplicable date filters are absent from meeting/material history views
 
 Selected current screenshots are under `docs/screenshots/`. They show the shared browser renderer and synthetic data, not a live Obsidian application.
 
@@ -43,4 +47,4 @@ Native-contract tests bundle the actual store/modal code against a minimal in-me
 
 An archive-integrity check is not a malicious-code audit. Open only trusted content and test in a backup Vault first. Online URLs remain maintained by their external provider; a frozen reference does not freeze that website's remote bytes.
 
-[GitHub Actions history](https://github.com/LiuYi217/obsidian-engineering-workbench/actions)
+[Verified runtime CI run](https://github.com/LiuYi217/obsidian-engineering-workbench/actions/runs/36874816163) · [GitHub Actions history](https://github.com/LiuYi217/obsidian-engineering-workbench/actions)

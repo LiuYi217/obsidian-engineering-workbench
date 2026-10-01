@@ -186,7 +186,7 @@ export function knowledgeReminders(data: WorkbenchData, today: string, closureSt
   for (const meeting of data.meetings ?? []) for (const action of meeting.actions) {
     const task = action.taskId ? data.tasks.find(task => task.id === action.taskId) : undefined;
     // A linked closed task is already accounted for; no duplicate open action alert.
-    if (action.state === 'open' && action.due && action.due < today && !(task && isClosed(task, closureStatus))) reminders.push({ id: `overdue-action:${meeting.id}:${action.id}`, kind: 'overdue-action', title: action.text, reason: `会议行动截止 ${action.due}，尚未闭环${action.owner ? `；负责人：${action.owner}` : ''}`, source: meeting.source, meetingId: meeting.id, taskId: action.taskId });
+    if (action.state === 'open' && action.due && action.due < today && !(task && isClosed(task, closureStatus))) reminders.push({ id: `overdue-action:${meeting.id}:${action.id}`, kind: 'overdue-action', title: action.text, reason: `会议记录中的行动截止 ${action.due}，尚未闭环${action.owner ? `；记录负责人：${action.owner}` : ''}`, source: meeting.source, meetingId: meeting.id, taskId: action.taskId });
   }
   for (const version of getNewerPendingVersions(data)) reminders.push({ id: `pending-version:${version.id}`, kind: 'pending-version', title: `${version.title} · ${version.version}`, reason: getAdoptedVersion(data, version.materialId, version.project) ? '有更新资料待评审/采用；现行采用版本及任务版本未改变' : '资料尚无明确采用记录；请评审后决定是否采用', source: version.source, materialId: version.materialId, versionId: version.id });
   for (const task of data.tasks) {

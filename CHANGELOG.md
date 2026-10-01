@@ -1,3 +1,11 @@
+## 0.1.0 — 未知任务数据兼容修复
+
+- 导入与编辑保留空日期和未知剩余工时 `null`，不生成默认日期或工时
+- 支持共同执行人，表格、人员、会议和摘要保持一致；周期投入不重复计入多人
+- 排期、估算或本人投入不完整时余量待确认；不把未排期积压自动纳入本周
+- 日期未知时不制造逾期/延期天数；保留原始计划、冻结基线及安全冲突检查
+- 测试仅使用合成记录；没有加入外部业务数据或 TAPD 联网写入
+
 # Changelog
 
 All notable user-facing changes are documented here. Versions follow semantic versioning while the project remains an early release.

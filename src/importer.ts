@@ -5,10 +5,10 @@ export type ImportFormat = 'csv' | 'json';
 export interface ImportIssue { row: number; field: string; message: string }
 export interface ImportDuplicate { id: string; row: number; reason: string }
 export interface ImportPreview { format: ImportFormat; tasks: Task[]; duplicates: ImportDuplicate[]; errors: ImportIssue[]; warnings: ImportIssue[]; canApply: boolean }
-export const CSV_COLUMNS = ['id', 'title', 'project', 'module', 'executor', 'status', 'originalStart', 'originalDue', 'forecastDue', 'remainingHours', 'allocations', 'dependencies', 'nextAction', 'source', 'lastUpdated', 'risk', 'blocker', 'contact', 'coordinationDue', 'meetingIds', 'materialVersionIds'] as const;
+export const CSV_COLUMNS = ['id', 'title', 'project', 'module', 'executor', 'status', 'originalStart', 'originalDue', 'forecastDue', 'remainingHours', 'allocations', 'dependencies', 'nextAction', 'source', 'lastUpdated', 'risk', 'blocker', 'contact', 'coordinationDue', 'meetingIds', 'materialVersionIds', 'executors'] as const;
 const TEXT_FIELDS = ['id', 'title', 'project', 'module', 'executor', 'nextAction', 'source'] as const;
 const OPTIONAL_TEXT_FIELDS = ['risk', 'blocker', 'contact'] as const;
-const ALLOWED_FIELDS = new Set<string>([...CSV_COLUMNS, 'facts', 'forecasts', 'judgments', 'path']);
+const ALLOWED_FIELDS = new Set<string>([...CSV_COLUMNS, 'facts', 'forecasts', 'judgments', 'path', 'executors']);
 const ID_PATTERN = /^[\p{L}\p{N}][\p{L}\p{N}_.:-]{0,127}$/u;
 function object(value: unknown): value is Record<string, unknown> { return value !== null && typeof value === 'object' && !Array.isArray(value); }
 function stable(value: unknown): string {
@@ -73,13 +73,13 @@ export function validateTaskRecord(record: unknown, row = 1, format: ImportForma
   else result.status = status;
   for (const field of ['originalStart', 'originalDue', 'forecastDue']) {
     const value = typeof record[field] === 'string' ? (record[field] as string).trim() : record[field];
-    if (!isValidDate(value)) error(field, `${field} must be a real date in YYYY-MM-DD format`);
+    if (value !== '' && !isValidDate(value)) error(field, `${field} must be a real date in YYYY-MM-DD format`);
     else result[field] = value;
   }
-  if (typeof result.originalStart === 'string' && typeof result.originalDue === 'string' && result.originalStart > result.originalDue) error('originalDue', 'originalDue must not precede originalStart');
-  if (typeof result.originalStart === 'string' && typeof result.forecastDue === 'string' && result.originalStart > result.forecastDue) error('forecastDue', 'forecastDue must not precede originalStart');
-  const hours = parseNumber(record.remainingHours);
-  if (hours === undefined) error('remainingHours', 'remainingHours must be a finite non-negative number');
+  if (isValidDate(result.originalStart) && isValidDate(result.originalDue) && result.originalStart > result.originalDue) error('originalDue', 'originalDue must not precede originalStart');
+  if (isValidDate(result.originalStart) && isValidDate(result.forecastDue) && result.originalStart > result.forecastDue) error('forecastDue', 'forecastDue must not precede originalStart');
+  const hours = record.remainingHours === null || (typeof record.remainingHours === 'string' && record.remainingHours.trim() === '') ? null : parseNumber(record.remainingHours);
+  if (hours === undefined) error('remainingHours', 'remainingHours must be a finite non-negative number or null (unknown)');
   else result.remainingHours = hours;
   const updated = typeof record.lastUpdated === 'string' ? record.lastUpdated.trim() : record.lastUpdated;
   if (!isValidTimestamp(updated)) error('lastUpdated', 'lastUpdated must be an ISO date or timestamp with timezone');
@@ -107,7 +107,7 @@ export function validateTaskRecord(record: unknown, row = 1, format: ImportForma
     else dependencies.push(id.trim());
   });
   result.dependencies = dependencies;
-  for (const field of ['meetingIds', 'materialVersionIds'] as const) {
+  for (const field of ['meetingIds', 'materialVersionIds', 'executors'] as const) {
     // Omit absent optional fields so old imports retain their exact shape.
     if (record[field] === undefined || (format === 'csv' && record[field] === '')) continue;
     let raw: unknown = record[field];
@@ -142,7 +142,7 @@ export function validateTaskRecord(record: unknown, row = 1, format: ImportForma
   }
   if (record.path !== undefined) warnings.push({ row, field: 'path', message: 'Imported filesystem path was ignored; the workbench chooses its own destination' });
   for (const field of Object.keys(record)) if (!ALLOWED_FIELDS.has(field)) warnings.push({ row, field, message: `Unknown field ${field} was ignored` });
-  if (hours !== undefined && allocations.reduce((sum, item) => sum + item.hours, 0) > hours) warnings.push({ row, field: 'allocations', message: 'Total allocation exceeds remaining effort; check the allocation periods and estimate' });
+  if (hours !== undefined && hours !== null && allocations.reduce((sum, item) => sum + item.hours, 0) > hours) warnings.push({ row, field: 'allocations', message: 'Total allocation exceeds remaining effort; check the allocation periods and estimate' });
   return { ...(errors.length ? {} : { task: result as unknown as Task }), errors, warnings };
 }
 export function previewImport(text: string, format: ImportFormat, existingTasks: readonly Task[] = []): ImportPreview {
@@ -194,7 +194,7 @@ export function previewImport(text: string, format: ImportFormat, existingTasks:
 }
 export type UpdateField = 'status' | 'forecastDue' | 'remainingHours' | 'blocker' | 'risk' | 'nextAction' | 'contact' | 'coordinationDue';
 export interface UpdateCandidate {
-  id: string; taskId: string; field: UpdateField; previousValue: string | number | undefined;
+  id: string; taskId: string; field: UpdateField; previousValue: string | number | null | undefined;
   proposedValue: string | number; evidence: string; reason: string; confidence: 'high' | 'medium';
 }
 export interface UpdatePreview { mode: 'offline-rules'; previewOnly: true; candidates: UpdateCandidate[]; warnings: string[]; unmatched: string[] }

@@ -105,7 +105,7 @@ test('native confirmation requires an explicit click; Cancel never applies', asy
   confirmed.onOpen(); click(confirmed, 'Apply'); await flush(); assert.equal(applied, 1); assert(confirmed.closed);
 });
 
-test('native task form clears optional fields explicitly and rejects a blank effort estimate', async () => {
+test('native task form clears optional fields explicitly and records blank effort as unknown', async () => {
   const updates: Partial<Task>[] = [];
   const plugin = { app: {}, data: { tasks: [sample()], projects: [] }, period: { start: '2026-09-28', end: '2026-10-04' }, store: { updateTask: async (_task: Task, changes: Partial<Task>) => { updates.push(changes); } }, reload: async () => {} };
   const modal = new native.TaskModal(plugin, sample()); modal.onOpen();
@@ -114,7 +114,7 @@ test('native task form clears optional fields explicitly and rejects a blank eff
   assert.equal(updates.length, 1);
   for (const key of ['blocker', 'risk', 'contact', 'coordinationDue'] as const) { assert(Object.prototype.hasOwnProperty.call(updates[0], key)); assert.equal(updates[0][key], undefined); }
   const blank = new native.TaskModal(plugin, sample()); blank.onOpen(); control(blank, '剩余工作量（小时）').value = '';
-  click(blank, '确认更新共享记录'); await flush(); assert.equal(updates.length, 1); assert.match(find(blank, n => n.className === 'elw-error').textContent, /remainingHours/);
+  click(blank, '确认更新共享记录'); await flush(); assert.equal(updates.length, 2); assert.equal(updates[1].remainingHours, null);
 });
 
 test('native import commits the reviewed snapshot, never later unpreviewed input', async () => {
@@ -192,4 +192,28 @@ test('native command registration exposes no fictional-record creation command',
 test('feature removal preserves pre-existing records, including synthetic-labeled notes',async()=>{
  const h=host();const file=await h.store.create('task',{...sample('demo-existing-task'),title:'已有记录',source:'历史虚构记录'},'# Preserve existing user note\n');const before=file.content;
  const data=await h.store.load();assert.equal(data.tasks.length,1);assert.equal(data.tasks[0].id,'demo-existing-task');assert.equal(h.files.size,1);assert.equal(file.content,before);
+});
+
+
+test('native task editing preserves unknown dates, null effort and all assignees without defaults', async () => {
+  const t: Task = {...sample(),originalStart:'',originalDue:'',forecastDue:'',remainingHours:null,allocations:[],executor:'person-a',executors:['person-a','person-b']};
+  const updates: Partial<Task>[]=[];
+  const plugin={app:{},data:{tasks:[t],projects:[]},period:{start:'2026-09-28',end:'2026-10-04'},store:{updateTask:async(_task:Task,changes:Partial<Task>)=>{updates.push(changes)}},reload:async()=>{}};
+  const modal=new native.TaskModal(plugin,t);modal.onOpen();
+  for(const label of ['原始开始日期','原始承诺日期','当前预测日期（条件成立时）','剩余工作量（小时）'])assert.equal(control(modal,label).value,'');
+  assert.equal(control(modal,'共同执行人 ID（逗号分隔）').value,'person-a, person-b');
+  control(modal,'当前执行人 ID').value='person-c';control(modal,'共同执行人 ID（逗号分隔）').value='person-b';
+  click(modal,'确认更新共享记录');await flush();assert.equal(updates.length,1);assert.equal(updates[0].forecastDue,'');assert.equal(updates[0].remainingHours,null);assert.equal(updates[0].executor,'person-c');assert.deepEqual(updates[0].executors,['person-b']);
+  const fresh=new native.TaskModal(plugin);fresh.onOpen();
+  for(const label of ['原始开始日期','原始承诺日期','当前预测日期（条件成立时）','剩余工作量（小时）'])assert.equal(control(fresh,label).value,'');
+  assert.deepEqual(JSON.parse(control(fresh,'周期投入 allocations（小时，不是全部积压）').value),[]);
+});
+
+test('native store round-trips unknown values and detects a concurrent co-assignee change', async()=>{
+ const {store,files}=host();const task={...sample('unknown-task'),originalStart:'',originalDue:'',forecastDue:'',remainingHours:null,allocations:[],executor:'person-a',executors:['person-b']};
+ const file=await store.create('task',task,'User-authored body stays intact');const loaded=(await store.load()).tasks[0];
+ assert.equal(loaded.remainingHours,null);assert.equal(loaded.originalDue,'');assert.deepEqual(loaded.executors,['person-b']);
+ const current=JSON.parse(frontmatter(file.content).frontmatter);current.executors=['person-c'];current.custom='preserve';file.content=`---\n${JSON.stringify(current)}\n---\nUser-authored body stays intact`;
+ await assert.rejects(store.updateTask(loaded,{executors:['person-d']}),/executors/);
+ assert(file.content.includes('User-authored body stays intact'));assert.equal(JSON.parse(frontmatter(file.content).frontmatter).custom,'preserve');assert.equal(files.size,1);
 });

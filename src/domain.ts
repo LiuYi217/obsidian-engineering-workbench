@@ -8,13 +8,14 @@ export interface WorkingCalendar { weekdays: number[]; exceptions?: Record<strin
 export interface EvidenceNote { text: string; source: string; recordedAt: string }
 export interface Task {
   id: string; title: string; project: string; module: string; executor: string;
+  /** Empty dates mean unrecorded, never today or a fabricated commitment. */
   status: TaskStatus; originalStart: string; originalDue: string; forecastDue: string;
-  remainingHours: number; allocations: Allocation[]; dependencies: string[];
+  remainingHours: number | null; allocations: Allocation[]; dependencies: string[];
   nextAction: string; source: string; lastUpdated: string;
   risk?: string; blocker?: string; contact?: string; coordinationDue?: string; path?: string;
   facts?: EvidenceNote[]; forecasts?: EvidenceNote[]; judgments?: EvidenceNote[];
   /** Explicit source links. Material IDs pin exact immutable version records, never the latest version. */
-  meetingIds?: string[]; materialVersionIds?: string[];
+  meetingIds?: string[]; materialVersionIds?: string[]; executors?: string[];
 }
 export interface Milestone { id: string; title: string; date: string; status?: 'planned' | 'completed'; source?: string }
 export interface Project { id: string; name: string; owner?: string; targetDate?: string; milestones?: Milestone[]; description?: string; source?: string; path?: string }
@@ -68,8 +69,8 @@ export interface CapacityResult {
   leaveHours: number; meetingsHours: number; supportHours: number; bufferHours: number;
   availableHours: number | null; warnings: string[];
 }
-export interface LoadResult { allocatedHours: number; unallocatedTaskIds: string[]; taskIds: string[] }
-export type ExceptionKind = 'blocked' | 'dependency' | 'dependency-cycle' | 'overdue' | 'stale' | 'coordination' | 'capacity-unknown' | 'over-capacity' | 'unallocated';
+export interface LoadResult { allocatedHours: number; unallocatedTaskIds: string[]; uncertainTaskIds: string[]; taskIds: string[] }
+export type ExceptionKind = 'blocked' | 'dependency' | 'dependency-cycle' | 'overdue' | 'stale' | 'coordination' | 'capacity-unknown' | 'capacity-incomplete' | 'over-capacity' | 'unallocated';
 export interface WorkbenchException { id: string; kind: ExceptionKind; severity: 'high' | 'medium'; taskId?: string; personId?: string; title: string; reason: string; source: string }
 export interface ExceptionOptions { today: string; staleDays?: number; closureStatus?: ClosureStatus; people?: Person[]; period?: Period; calendar?: WorkingCalendar }
 export interface BaselineFieldChange { field: string; baseline: unknown; current: unknown }
@@ -169,21 +170,27 @@ export function calculateCapacity(person: Person, period: Period, calendar: Work
   if (deductions > grossHours) warnings.push('扣减工时超过总工时，可用容量按零计算');
   return { status: 'known', workingDays: days, grossHours, leaveHours, meetingsHours, supportHours, bufferHours, availableHours: round(Math.max(0, grossHours - deductions)), warnings };
 }
+export function taskExecutors(task: Pick<Task, 'executor' | 'executors'>): string[] { return [...new Set([task.executor, ...(task.executors ?? [])])]; }
 export function calculateLoad(tasks: readonly Task[], personId: string, period: Period, calendar: WorkingCalendar = DEFAULT_CALENDAR, closureStatus: ClosureStatus = 'test-passed'): LoadResult {
   assertPeriod(period);
   let allocatedHours = 0;
-  const unallocatedTaskIds: string[] = [], taskIds: string[] = [];
+  const unallocatedTaskIds: string[] = [], uncertainTaskIds: string[] = [], taskIds: string[] = [];
   for (const task of [...tasks].sort(byId)) {
-    if (task.executor !== personId || task.status === 'cancelled') continue;
+    if (!taskExecutors(task).includes(personId) || task.status === 'cancelled') continue;
     const overlaps = task.allocations.filter(allocation => periodsOverlap({ start: allocation.periodStart, end: allocation.periodEnd }, period));
-    const taskOverlaps = periodsOverlap({ start: task.originalStart, end: task.forecastDue >= task.originalStart ? task.forecastDue : task.originalStart }, period);
-    if (!overlaps.length && !taskOverlaps) continue;
+    const taskOverlaps = isValidDate(task.originalStart) && isValidDate(task.forecastDue) && periodsOverlap({ start: task.originalStart, end: task.forecastDue >= task.originalStart ? task.forecastDue : task.originalStart }, period);
+    const active = !isClosed(task, closureStatus);
+    const completeSchedule = isValidDate(task.originalStart) && isValidDate(task.forecastDue);
+    const touches = overlaps.length > 0 || taskOverlaps || taskTouchesPeriod(task, period);
+    if (active && (!completeSchedule || (touches && (task.remainingHours === null || task.executor !== personId)))) uncertainTaskIds.push(task.id);
+    if (!touches) continue;
     taskIds.push(task.id);
-    const periodHours = overlaps.reduce((sum, allocation) => sum + allocationHoursInPeriod(allocation, period, calendar), 0);
+    // Existing allocations belong to the primary executor; collaborators never duplicate them.
+    const periodHours = (task.executor === personId ? overlaps : []).reduce((sum, allocation) => sum + allocationHoursInPeriod(allocation, period, calendar), 0);
     allocatedHours += periodHours;
-    if (!isClosed(task, closureStatus) && task.remainingHours > 0 && periodHours <= 0) unallocatedTaskIds.push(task.id);
+    if (!isClosed(task, closureStatus) && task.remainingHours !== null && task.remainingHours > 0 && periodHours <= 0) unallocatedTaskIds.push(task.id);
   }
-  return { allocatedHours: round(allocatedHours), unallocatedTaskIds, taskIds };
+  return { allocatedHours: round(allocatedHours), unallocatedTaskIds, uncertainTaskIds, taskIds };
 }
 function byId(a: { id: string }, b: { id: string }): number { return a.id < b.id ? -1 : a.id > b.id ? 1 : 0; }
 function clone<T>(value: T): T { return JSON.parse(JSON.stringify(value)) as T; }
@@ -204,7 +211,7 @@ export function generateBaseline(tasks: readonly Task[], options: { id: string; 
   if (new Set(tasks.map(task => task.id)).size !== tasks.length) throw new RangeError('Cannot freeze a baseline with duplicate task IDs');
   return deepFreeze({ schemaVersion: 1 as const, ...clone(options), tasks: clone(tasks.filter(task => !options.period || taskTouchesPeriod(task, options.period)).sort(byId)) });
 }
-const BASELINE_FIELDS: (keyof Task)[] = ['title', 'project', 'module', 'executor', 'status', 'originalStart', 'originalDue', 'forecastDue', 'remainingHours', 'allocations', 'dependencies', 'nextAction', 'risk', 'blocker', 'contact', 'coordinationDue', 'meetingIds', 'materialVersionIds'];
+const BASELINE_FIELDS: (keyof Task)[] = ['title', 'project', 'module', 'executor', 'executors', 'status', 'originalStart', 'originalDue', 'forecastDue', 'remainingHours', 'allocations', 'dependencies', 'nextAction', 'risk', 'blocker', 'contact', 'coordinationDue', 'meetingIds', 'materialVersionIds'];
 function stableValue(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(stableValue).join(',')}]`;
   if (value && typeof value === 'object') return `{${Object.entries(value).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0).map(([key, item]) => `${JSON.stringify(key)}:${stableValue(item)}`).join(',')}}`;
@@ -220,7 +227,7 @@ export function compareBaseline(baseline: Baseline, tasks: readonly Task[]): Bas
     if (!before) { changes.push({ taskId, type: 'added', fields: [], currentDue: after!.forecastDue }); continue; }
     if (!after) { changes.push({ taskId, type: 'removed', fields: [], baselineDue: before.forecastDue }); continue; }
     const fields = BASELINE_FIELDS.filter(field => stableValue(before[field]) !== stableValue(after[field])).map(field => ({ field, baseline: clone(before[field] ?? null), current: clone(after[field] ?? null) }));
-    if (fields.length) changes.push({ taskId, type: 'changed', fields, baselineDue: before.forecastDue, currentDue: after.forecastDue, slipDays: calendarDaysBetween(before.forecastDue, after.forecastDue) });
+    if (fields.length) changes.push({ taskId, type: 'changed', fields, baselineDue: before.forecastDue, currentDue: after.forecastDue, slipDays: isValidDate(before.forecastDue) && isValidDate(after.forecastDue) ? calendarDaysBetween(before.forecastDue, after.forecastDue) : undefined });
   }
   return { baselineId: baseline.id, changes, added: changes.filter(change => change.type === 'added').length, removed: changes.filter(change => change.type === 'removed').length, changed: changes.filter(change => change.type === 'changed').length, slipped: changes.filter(change => (change.slipDays ?? 0) > 0).length };
 }
@@ -253,7 +260,7 @@ export function detectExceptions(tasks: readonly Task[], options: ExceptionOptio
   nonnegative(staleDays, 'Stale threshold');
   const taskMap = new Map(tasks.map(task => [task.id, task]));
   const exceptions: WorkbenchException[] = [];
-  const add = (task: Task, kind: ExceptionKind, reason: string, severity: 'high' | 'medium' = 'medium'): void => { exceptions.push({ id: `${kind}:${task.id}`, kind, severity, taskId: task.id, title: task.title, reason, source: task.source }); };
+  const add = (task: Task, kind: ExceptionKind, reason: string, severity: 'high' | 'medium' = 'medium'): void => { if (!exceptions.some(item => item.id === `${kind}:${task.id}`)) exceptions.push({ id: `${kind}:${task.id}`, kind, severity, taskId: task.id, title: task.title, reason, source: task.source }); };
   for (const task of [...tasks].sort(byId)) {
     if (isClosed(task, closure)) continue;
     if (task.status === 'blocked' || task.blocker?.trim()) add(task, 'blocked', task.blocker?.trim() || '状态为 blocked，但尚未记录阻塞原因', 'high');
@@ -264,8 +271,8 @@ export function detectExceptions(tasks: readonly Task[], options: ExceptionOptio
       return isClosed(dependency, closure) ? [] : [`依赖 ${id} 当前为 ${dependency.status}，尚未达到闭环标准 ${closure}`];
     });
     if (reasons.length) add(task, 'dependency', reasons.join('; '), 'high');
-    if (task.originalDue < options.today) add(task, 'overdue', `原始截止日 ${task.originalDue} 已逾期 ${calendarDaysBetween(task.originalDue, options.today)} 个自然日；当前条件性预测为 ${task.forecastDue}`, 'high');
-    else if (task.forecastDue < options.today) add(task, 'overdue', `条件性预测日 ${task.forecastDue} 已过，尚未达到 ${closure}；原始截止日为 ${task.originalDue}`, 'high');
+    if (isValidDate(task.originalDue) && task.originalDue < options.today) add(task, 'overdue', `原始截止日 ${task.originalDue} 已逾期 ${calendarDaysBetween(task.originalDue, options.today)} 个自然日；当前条件性预测为 ${task.forecastDue || '未评估'}`, 'high');
+    else if (isValidDate(task.forecastDue) && task.forecastDue < options.today) add(task, 'overdue', `条件性预测日 ${task.forecastDue} 已过，尚未达到 ${closure}；原始截止日为 ${task.originalDue || '未排期'}`, 'high');
     if (!isValidTimestamp(task.lastUpdated)) add(task, 'stale', '最后更新时间无效，无法判断信息是否过期');
     else {
       const age = calendarDaysBetween(task.lastUpdated.slice(0, 10), options.today);
@@ -280,24 +287,25 @@ export function detectExceptions(tasks: readonly Task[], options: ExceptionOptio
   }
   if (options.period) {
     const people = new Map((options.people ?? []).map(person => [person.id, person]));
-    const ids = [...new Set([...people.keys(), ...tasks.filter(task => task.status !== 'cancelled').map(task => task.executor)])].sort();
+    const ids = [...new Set([...people.keys(), ...tasks.filter(task => task.status !== 'cancelled').flatMap(task => taskExecutors(task))])].sort();
     for (const personId of ids) {
       const person = people.get(personId) ?? { id: personId, name: personId || '未分配' };
       const calendar = person.calendar ?? options.calendar ?? DEFAULT_CALENDAR;
       const load = calculateLoad(tasks, personId, options.period, calendar, closure);
       const capacity = calculateCapacity(person, options.period, calendar);
-      if (!load.taskIds.length && !people.has(personId)) continue;
+      if (!load.taskIds.length && !load.uncertainTaskIds.length && !people.has(personId)) continue;
       if (capacity.status === 'unknown') exceptions.push({ id: `capacity-unknown:${personId}`, kind: 'capacity-unknown', severity: 'medium', personId, title: person.name, reason: '容量未配置；可用性未知，不能视为空闲', source: person.source ?? '' });
       else if (load.allocatedHours > capacity.availableHours!) exceptions.push({ id: `over-capacity:${personId}`, kind: 'over-capacity', severity: 'high', personId, title: person.name, reason: `${options.period.start}–${options.period.end} 已分配 ${load.allocatedHours} 小时，可用 ${capacity.availableHours} 小时，超出 ${round(load.allocatedHours - capacity.availableHours!)} 小时`, source: person.source ?? load.taskIds.map(id => taskMap.get(id)?.source).filter(Boolean).join('; ') });
+      if (capacity.status === 'known' && load.uncertainTaskIds.length) exceptions.push({ id: `capacity-incomplete:${personId}`, kind: 'capacity-incomplete', severity: 'medium', personId, title: person.name, reason: `${load.uncertainTaskIds.length} 项任务的排期、估算或本人投入尚未明确；余量待确认`, source: load.uncertainTaskIds.map(id => taskMap.get(id)?.source).filter(Boolean).join('; ') });
       for (const id of load.unallocatedTaskIds) add(taskMap.get(id)!, 'unallocated', `已记录剩余工时，但 ${options.period.start}–${options.period.end} 没有正工时的工作日分配；负载信息不完整`);
     }
   }
   return exceptions.sort((a, b) => (a.severity === b.severity ? 0 : a.severity === 'high' ? -1 : 1) || byId(a, b));
 }
-export function forecastLabel(task: Pick<Task, 'forecastDue'>): string { return `条件性预测：${task.forecastDue}（以容量、估算和依赖条件保持为前提）`; }
+export function forecastLabel(task: Pick<Task, 'forecastDue'>): string { return task.forecastDue ? `条件性预测：${task.forecastDue}（以容量、估算和依赖条件保持为前提）` : '尚未评估预测日期'; }
 function markdown(value: unknown): string { return String(value ?? '').replace(/\r?\n/g, ' ').replace(/[\\`*_{}\[\]<>#|]/g, char => `\\${char}`); }
 function sourceText(source: string): string { return source.trim() ? markdown(source) : '未记录'; }
-function taskLine(task: Task): string { return `- ${markdown(task.id)}：${markdown(task.title)} | 状态 ${markdown(task.status)} | 执行人 ${markdown(task.executor || '未分配')} | 原始截止 ${task.originalDue} | 条件性预测 ${task.forecastDue} | 剩余 ${task.remainingHours} 小时\n  - 下一步：${markdown(task.nextAction || '未记录')} · 来源：${sourceText(task.source)} · 更新：${markdown(task.lastUpdated)}`; }
+function taskLine(task: Task): string { return `- ${markdown(task.id)}：${markdown(task.title)} | 状态 ${markdown(task.status)} | 执行人 ${markdown(taskExecutors(task).map(id => id || '未分配').join('、') || '未分配')} | 原始截止 ${task.originalDue || '未排期'} | 条件性预测 ${task.forecastDue || '未评估'} | 剩余 ${task.remainingHours === null ? '未知' : task.remainingHours + ' 小时'}\n  - 下一步：${markdown(task.nextAction || '未记录')} · 来源：${sourceText(task.source)} · 更新：${markdown(task.lastUpdated)}`; }
 export function generateWeeklySummary(data: WorkbenchData, options: SummaryOptions): string {
   assertPeriod(options.period); dateNumber(options.today);
   const closure = options.closureStatus ?? 'test-passed';
@@ -312,13 +320,14 @@ export function generateWeeklySummary(data: WorkbenchData, options: SummaryOptio
   else for (const exception of exceptions) lines.push(`- [${exception.severity === 'high' ? '高' : '中'}] ${markdown(exception.taskId ?? exception.personId ?? exception.id)}：${markdown(exception.reason)} · 来源：${sourceText(exception.source)}`);
   lines.push('', '## 容量与分配');
   const people = new Map(data.people.map(person => [person.id, person]));
-  for (const id of relevant.filter(task => task.status !== 'cancelled').map(task => task.executor)) if (!people.has(id)) people.set(id, { id, name: id || '未分配' });
+  for (const id of sorted.filter(task => !isClosed(task, closure) || relevant.includes(task)).filter(task => task.status !== 'cancelled').flatMap(task => taskExecutors(task))) if (!people.has(id)) people.set(id, { id, name: id || '未分配' });
   if (!people.size) lines.push('- 尚未记录人员或容量数据');
   for (const person of [...people.values()].sort(byId)) {
     const calendar = person.calendar ?? options.calendar ?? DEFAULT_CALENDAR;
     const capacity = calculateCapacity(person, options.period, calendar), load = calculateLoad(data.tasks, person.id, options.period, calendar, closure);
     lines.push(`- ${markdown(person.name)}：${capacity.availableHours === null ? '容量未知' : `可用 ${capacity.availableHours} 小时`} / 已分配 ${load.allocatedHours} 小时${load.unallocatedTaskIds.length ? `；以下任务分配不完整：${load.unallocatedTaskIds.map(markdown).join('、')}` : ''} · 来源：${sourceText(person.source ?? '')}`);
     if (capacity.status === 'known') lines.push(`  - ${capacity.workingDays} 个工作日；总工时 ${capacity.grossHours}；扣减请假 ${capacity.leaveHours}、会议 ${capacity.meetingsHours}、支持 ${capacity.supportHours}、缓冲 ${capacity.bufferHours} 小时`);
+    if (load.uncertainTaskIds.length) lines.push(`  - 排期、估算或本人投入未明确，余量待确认：${load.uncertainTaskIds.map(markdown).join('、')}`);
     capacity.warnings.forEach(warning => lines.push(`  - ${markdown(warning)}`));
   }
   lines.push('', '## 本期里程碑（按已记录状态）');
@@ -337,7 +346,7 @@ export function generateWeeklySummary(data: WorkbenchData, options: SummaryOptio
     const comparison = compareBaseline(baseline, data.tasks);
     lines.push(`- 冻结基线 ${markdown(baseline.name)}（${markdown(baseline.id)}），创建于 ${markdown(baseline.createdAt)}：新增 ${comparison.added} 项，移除 ${comparison.removed} 项，变化 ${comparison.changed} 项，预测延期 ${comparison.slipped} 项`);
     const changeLabels = { added: '新增', removed: '移除', changed: '变化' };
-    for (const change of comparison.changes) lines.push(`  - ${markdown(change.taskId)}：${changeLabels[change.type]}${change.type === 'changed' ? `；变化字段 ${change.fields.map(field => field.field).join('、')}；预测 ${change.baselineDue} → ${change.currentDue}（${change.slipDays! > 0 ? '+' : ''}${change.slipDays} 个自然日）` : ''}`);
+    for (const change of comparison.changes) lines.push(`  - ${markdown(change.taskId)}：${changeLabels[change.type]}${change.type === 'changed' ? `；变化字段 ${change.fields.map(field => field.field).join('、')}；预测 ${change.baselineDue || '未评估'} → ${change.currentDue || '未评估'}${change.slipDays === undefined ? '（日期不完整，延期未知）' : `（${change.slipDays > 0 ? '+' : ''}${change.slipDays} 个自然日）`}` : ''}`);
   }
   lines.push('', '## 证据：事实 / 预测 / 判断');
   let notes = 0;

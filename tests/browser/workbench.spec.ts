@@ -69,3 +69,14 @@ test('project scope has no blank or scaffold block and preserves real content',a
  for(const scope of ['empty','placeholder']){await page.goto(`/?tab=projects&scope=${scope}`);await expect(page.locator('.elw-project-grid summary').filter({hasText:'范围'})).toHaveCount(0);await expect(page.getByText('请填写范围、目标和验收边界',{exact:true})).toHaveCount(0);}
  await page.goto('/?tab=projects&scope=real');await page.locator('.elw-project-grid summary').filter({hasText:'范围'}).click();await expect(page.getByText('真实范围：只交付接入模块；验收：边界用例通过。',{exact:true})).toBeVisible();
 });
+
+
+test('unknown imported work stays visible without inventing dates, effort or spare capacity',async({page})=>{
+ const errors:string[]=[];page.on('pageerror',error=>errors.push(error.message));
+ await page.goto('/?tab=projects&unknown=1');const row=page.locator('.elw-table tbody tr');
+ await expect(row).toHaveCount(1);await expect(row.getByText('虚构甲、虚构乙',{exact:true})).toBeVisible();await expect(row.getByText('未知',{exact:true})).toBeVisible();await expect(row.getByText('未评估',{exact:true})).toBeVisible();
+ await page.getByRole('searchbox',{name:'搜索任务'}).fill('fixture-b');await page.getByRole('searchbox',{name:'搜索任务'}).press('Enter');await expect(page.getByRole('button',{name:'【虚构】未知排期任务',exact:true})).toBeVisible();
+ await page.goto('/?tab=people&unknown=1');await expect(page.locator('.elw-person')).toHaveCount(2);await expect(page.getByText('1 项投入待确认，余量未知',{exact:true})).toHaveCount(2);await expect(page.getByText(/预计余量/)).toHaveCount(0);
+ await page.goto('/?tab=projects&unknown=1');await page.getByRole('button',{name:'详情 →',exact:true}).first().click();await page.getByRole('navigation',{name:'项目详情'}).getByRole('button',{name:'人员',exact:true}).click();await expect(page.getByText('余量待确认',{exact:true})).toHaveCount(2);
+ await page.goto('/?tab=meetings&unknown=1');const action=page.locator('.elw-meeting-action');await expect(action).toContainText('虚构甲、虚构乙');await expect(action).toContainText('未定日期');await expect(action).not.toContainText('2099-12-31');await expect(action).not.toContainText('old-owner');expect(errors).toEqual([]);
+});
