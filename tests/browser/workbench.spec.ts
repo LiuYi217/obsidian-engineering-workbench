@@ -88,11 +88,11 @@ test('people show current work grouped by requirement with direct exact source l
  await expect(group.getByRole('heading',{name:'【虚构】统一接入需求',exact:true})).toBeVisible();
  await expect(group.getByRole('button',{name:'【虚构】对接协议确认',exact:true})).toBeVisible();await expect(group.getByRole('button',{name:'【虚构】接入联调',exact:true})).toBeVisible();
  await expect(member.getByRole('button',{name:'【虚构】网关接口回归',exact:true})).not.toBeVisible();
- const prototype=group.getByRole('button',{name:'原型 · 【虚构】星桥接入原型 · v0.2',exact:true});await expect(prototype).toBeVisible();await expect(group.getByRole('button',{name:/v0.3/})).toHaveCount(0);
+ const prototype=group.getByRole('button',{name:'原型 · 【虚构】星桥接入原型 · v0.2',exact:true});await expect(prototype).toBeVisible();await expect(group.getByRole('button',{name:'原型 · 【虚构】星桥接入原型 · v0.3',exact:true})).toHaveCount(0);await expect(group.getByRole('button',{name:'会议资料 · 原型 · 【虚构】星桥接入原型 · v0.3',exact:true})).toBeVisible();
  await prototype.click();await expect(page.getByRole('dialog')).toContainText('demo-prototype-v2');await page.getByRole('button',{name:'关闭',exact:true}).click();
  await group.getByRole('button',{name:/^会议 ·/}).first().click();await expect(page.getByRole('dialog')).toContainText('demo-meeting-001');await page.getByRole('button',{name:'关闭',exact:true}).click();
  await group.getByRole('button',{name:'打开需求来源 【虚构】统一接入需求',exact:true}).click();await expect(page.getByRole('dialog')).toContainText('https://example.com/requirements/access');await page.getByRole('button',{name:'关闭',exact:true}).click();
- await group.getByRole('button',{name:'【虚构】接入联调',exact:true}).click();await expect(page.getByRole('dialog')).toContainText('demo-task-004');await page.getByRole('button',{name:'关闭',exact:true}).click();
+ await group.getByRole('button',{name:'【虚构】接入联调',exact:true}).click();await expect(page.getByRole('dialog')).toContainText('demo-task-004');await expect(page.getByRole('dialog')).toContainText('demo-prototype-v2');await expect(page.getByRole('dialog')).not.toContainText('demo-prototype-v3');await page.getByRole('button',{name:'关闭',exact:true}).click();
  await member.locator('.elw-work-history > summary').click();await expect(member.getByRole('button',{name:'【虚构】网关接口回归',exact:true})).toBeVisible();await member.locator('.elw-work-history > summary').click();
  await expect(page.getByRole('button',{name:'【虚构】权限策略开发',exact:true})).toBeVisible();
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1)).toBeTruthy();await page.screenshot({path:testInfo.outputPath(`${testInfo.project.name}-person-work-groups.png`),fullPage:true});
