@@ -52,6 +52,7 @@ before(async () => {
     const bridge=globalThis.__elwNativeSmoke;
     export class Modal { constructor(app){this.app=app;this.contentEl=document.createElement('div');this.closed=false;} open(){this.onOpen();} close(){this.closed=true;this.onClose();} }
     export class Notice { constructor(text){bridge.notices.push(text);} }
+    export class FileSystemAdapter {} export const Platform={isDesktopApp:false};
     export class Plugin {} export class App {} export class ItemView {} export class PluginSettingTab {} export class Setting {} export class WorkspaceLeaf {}
     export const TFile=bridge.FileStub;
     export const getFrontMatterInfo=bridge.frontmatter;

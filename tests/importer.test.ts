@@ -92,3 +92,25 @@ test('reviewed updates without an original source remain valid with an explicit 
   assert.ok(validateTaskRecord(updated[0]).task);
   assert.match(updated[0].facts![0].source, /original source not recorded/);
 });
+
+test('optional exact version and meeting references round-trip JSON and CSV without changing old tasks', () => {
+  const linked = task({ meetingIds: ['MEET-1'], materialVersionIds: ['V-1', 'V-2'] });
+  assert.deepEqual(previewImport(JSON.stringify([linked]), 'json').tasks, [linked]);
+  assert.deepEqual(previewImport(csv([linked]), 'csv').tasks, [linked]);
+  assert.deepEqual(previewImport(csv([task()]), 'csv').tasks, [task()]);
+  const oldHeaders = CSV_COLUMNS.filter(key => !['meetingIds', 'materialVersionIds'].includes(key));
+  const oldCsv = oldHeaders.join(',') + '\n' + oldHeaders.map(key => `"${String(Array.isArray(task()[key]) ? JSON.stringify(task()[key]) : task()[key] ?? '').replace(/"/g, '""')}"`).join(',');
+  assert.equal(previewImport(oldCsv, 'csv').canApply, true);
+  assert.equal(previewImport(oldCsv, 'csv').tasks[0].materialVersionIds, undefined);
+});
+test('reference arrays validate IDs, deduplicate repeats visibly and do not rewrite to latest', () => {
+  const result = validateTaskRecord(task({ meetingIds: ['MEET-1', 'MEET-1'], materialVersionIds: ['VERSION-OLD'] }));
+  assert.deepEqual(result.task!.meetingIds, ['MEET-1']);
+  assert.deepEqual(result.task!.materialVersionIds, ['VERSION-OLD']);
+  assert.equal(result.warnings.filter(item => item.field === 'meetingIds').length, 1);
+  for (const patch of [{ meetingIds: 'MEET-1' }, { materialVersionIds: ['../escape'] }, { meetingIds: [123] }, { materialVersionIds: [''] }]) assert.equal(validateTaskRecord({ ...task(), ...patch }).task, undefined);
+});
+test('same task ID with a changed exact source pin is a reviewed update conflict', () => {
+  const result = previewImport(JSON.stringify([task({ materialVersionIds: ['V-2'] })]), 'json', [task({ materialVersionIds: ['V-1'] })]);
+  assert.equal(result.canApply, false); assert.match(result.errors[0].message, /different values/);
+});

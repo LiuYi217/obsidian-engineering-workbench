@@ -1,8 +1,25 @@
 # v0.1.0 verification record
 
+The meeting/material/prototype source extension remains untagged at package version 0.1.0. Historical results below apply only to the earlier implementation and must not be read as verification of the extension.
+
+## Current extension checks
+
+- The synthetic fixture was checked directly with all nine managed-record validators across 2026-09-28, 2026-10-01, 2026-10-04, 2027-01-01, and 2028-02-29; all records passed with no knowledge-reference warnings
+- Each fixture contains four material-version records (three versions of one prototype and one document), two meetings, an explicit adoption of v0.2, and a task that remains pinned to v0.2 while v0.3 is incoming
+- A direct adoption simulation across the same five dates confirmed that adopting v0.3 changes the selected adoption but preserves the task’s v0.2 pin and all immutable material records
+- Demo source URLs use example.com only; local source references do not create or host any prototype assets
+- `npm run check` passes strict TypeScript, 105 core/security/native-contract tests, and a production build
+- `npm audit` reports 0 vulnerabilities; fflate is pinned to patched 0.8.3
+- `npm run package` produces the installable assets; `npm run preview:build` and discovery of 24 browser cases pass
+- Browser execution of the extension and real-host verification are still pending at this snapshot
+
+The fixture checks are focused source-level checks, not Obsidian or browser tests.
+
+## Historical baseline: before the extension
+
 Checked on 2026-10-01 in a Linux build container, Node.js 24.19.0.
 
-## Passed locally
+### Passed locally (historical)
 
 - `npm run check`: strict TypeScript checking, 45 automated tests and production build
 - `npm audit`: 0 vulnerabilities after a targeted development-only Moment 2.31.0 override
@@ -16,7 +33,7 @@ Tests include actual calendar days/exceptions, partial-period allocations, compl
 
 Seven tests bundle the actual plugin/store code against a minimal **mock** Obsidian/DOM host. They verify explicit confirmation/cancel, field clearing, blank effort rejection, immutable import previews, preservation of custom fields/body/original dates, baseline collision protection, progress preflight and partial-commit reporting. These are contract tests, not an actual Obsidian application or YAML-engine test.
 
-## Browser verification
+### Browser verification (historical)
 
 The GitHub Actions `browser-harness` job is configured to install Playwright Chromium on an Ubuntu runner, exercise the shared renderer at 1440px and 390px, and upload screenshots/traces under `browser-harness-results`.
 
@@ -26,9 +43,11 @@ The local browser connection could not reach the container's loopback address, a
 
 The harness uses synthetic data and mocked actions for native Vault operations. Even a passing browser run does not establish native Obsidian host compatibility.
 
-## Not yet verified
+## Not yet verified for the current extension
 
 - Actual desktop Obsidian application loading, enable/disable, real `processFrontMatter` serialization and interactions
+- Six-view navigation, project sub-tabs, meeting/material modals, and native prototype intake/opening in a real Obsidian host
+- Desktop Electron external-browser behavior and the mobile local-file unsupported state
 - Actual Obsidian mobile/iOS/Android host behavior
 - Every third-party theme and accessibility assistive technology
 - Acceptance into the official Obsidian community plugin directory

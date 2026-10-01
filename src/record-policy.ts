@@ -1,6 +1,7 @@
 import { TASK_STATUSES, isValidDate, isValidTimestamp, calculateCapacity, workingDays, type Period, type Person } from './domain';
 import { validateTaskRecord } from './importer';
-export type RecordKind = 'task'|'project'|'person'|'module'|'decision'|'baseline';
+import { validateMaterialVersion, validateAdoption, validateMeeting } from './knowledge';
+export type RecordKind = 'task'|'project'|'person'|'module'|'decision'|'baseline'|'material-version'|'adoption'|'meeting';
 const object=(v:unknown):v is Record<string,unknown> => v!==null&&typeof v==='object'&&!Array.isArray(v);
 export function stableValue(value:unknown):string {
  if(Array.isArray(value))return `[${value.map(stableValue).join(',')}]`;
@@ -13,9 +14,12 @@ export function safeFileName(id:string):string{
 }
 /** Reject malformed managed records at the Vault boundary; unrelated frontmatter is untouched. */
 export function validateManagedRecord(kind:RecordKind,record:Record<string,unknown>):string[]{
+ if(kind==='material-version')return validateMaterialVersion(record);
+ if(kind==='adoption')return validateAdoption(record);
+ if(kind==='meeting')return validateMeeting(record);
  const errors:string[]=[];const text=(key:string,required=false)=>{if((required||record[key]!==undefined)&&typeof record[key]!=='string')errors.push(`${key} 必须为字符串`);};
  text('id',true);if(typeof record.id==='string'&&!record.id.trim())errors.push('id 不能为空');
- if(kind==='task'){const issues=validateTaskRecord(record).errors.map(e=>`${e.field}: ${e.message}`);for(const key of ['originalStart','originalDue','forecastDue'])if(!isValidDate(record[key]))issues.push(`${key} 必须为规范 ISO 日期`);if(!isValidTimestamp(record.lastUpdated))issues.push('lastUpdated 必须为规范 ISO 时间');if(!TASK_STATUSES.includes(record.status as never))issues.push('status 必须为规范状态值');if(typeof record.remainingHours!=='number')issues.push('remainingHours 必须为数字');if(!Array.isArray(record.dependencies))issues.push('dependencies 必须为数组');if(!Array.isArray(record.allocations))issues.push('allocations 必须为数组');else for(const item of record.allocations)if(!object(item)||typeof item.hours!=='number')issues.push('allocation.hours 必须为数字');return issues;}
+ if(kind==='task'){const issues=validateTaskRecord(record).errors.map(e=>`${e.field}: ${e.message}`);for(const key of ['originalStart','originalDue','forecastDue'])if(!isValidDate(record[key]))issues.push(`${key} 必须为规范 ISO 日期`);if(!isValidTimestamp(record.lastUpdated))issues.push('lastUpdated 必须为规范 ISO 时间');if(!TASK_STATUSES.includes(record.status as never))issues.push('status 必须为规范状态值');if(typeof record.remainingHours!=='number')issues.push('remainingHours 必须为数字');for(const key of ['meetingIds','materialVersionIds'])if(record[key]!==undefined&&(!Array.isArray(record[key])||(record[key] as unknown[]).some(id=>typeof id!=='string'||id!==id.trim())))issues.push(`${key} 必须为规范 ID 数组`);if(!Array.isArray(record.dependencies))issues.push('dependencies 必须为数组');if(!Array.isArray(record.allocations))issues.push('allocations 必须为数组');else for(const item of record.allocations)if(!object(item)||typeof item.hours!=='number')issues.push('allocation.hours 必须为数字');return issues;}
  if(['project','person','module'].includes(kind))text('name',true);
  for(const key of ['source','owner','description'])text(key);
  if(kind==='project'&&record.targetDate!==undefined&&!isValidDate(record.targetDate))errors.push('targetDate 需为有效 ISO 日期');
@@ -34,7 +38,7 @@ export function validateManagedRecord(kind:RecordKind,record:Record<string,unkno
  }
  return errors;
 }
-export const MUTABLE_TASK_FIELDS=new Set(['title','project','module','executor','status','forecastDue','remainingHours','allocations','dependencies','nextAction','source','risk','blocker','contact','coordinationDue','facts','forecasts','judgments']);
+export const MUTABLE_TASK_FIELDS=new Set(['title','project','module','executor','status','forecastDue','remainingHours','allocations','dependencies','nextAction','source','risk','blocker','contact','coordinationDue','facts','forecasts','judgments','meetingIds','materialVersionIds']);
 /** Compare every changed field against the preview snapshot, not just user-managed timestamps. */
 export function assertFreshTaskFields(current:Record<string,unknown>,snapshot:Record<string,unknown>,changes:Record<string,unknown>):void{
  for(const key of Object.keys(changes)){if(MUTABLE_TASK_FIELDS.has(key)&&stableValue(current[key])!==stableValue(snapshot[key]))throw new Error(`字段 ${key} 已在别处更新，请刷新后重新确认`);}

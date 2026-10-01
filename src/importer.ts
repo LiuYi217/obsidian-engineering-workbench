@@ -5,7 +5,7 @@ export type ImportFormat = 'csv' | 'json';
 export interface ImportIssue { row: number; field: string; message: string }
 export interface ImportDuplicate { id: string; row: number; reason: string }
 export interface ImportPreview { format: ImportFormat; tasks: Task[]; duplicates: ImportDuplicate[]; errors: ImportIssue[]; warnings: ImportIssue[]; canApply: boolean }
-export const CSV_COLUMNS = ['id', 'title', 'project', 'module', 'executor', 'status', 'originalStart', 'originalDue', 'forecastDue', 'remainingHours', 'allocations', 'dependencies', 'nextAction', 'source', 'lastUpdated', 'risk', 'blocker', 'contact', 'coordinationDue'] as const;
+export const CSV_COLUMNS = ['id', 'title', 'project', 'module', 'executor', 'status', 'originalStart', 'originalDue', 'forecastDue', 'remainingHours', 'allocations', 'dependencies', 'nextAction', 'source', 'lastUpdated', 'risk', 'blocker', 'contact', 'coordinationDue', 'meetingIds', 'materialVersionIds'] as const;
 const TEXT_FIELDS = ['id', 'title', 'project', 'module', 'executor', 'nextAction', 'source'] as const;
 const OPTIONAL_TEXT_FIELDS = ['risk', 'blocker', 'contact'] as const;
 const ALLOWED_FIELDS = new Set<string>([...CSV_COLUMNS, 'facts', 'forecasts', 'judgments', 'path']);
@@ -107,6 +107,20 @@ export function validateTaskRecord(record: unknown, row = 1, format: ImportForma
     else dependencies.push(id.trim());
   });
   result.dependencies = dependencies;
+  for (const field of ['meetingIds', 'materialVersionIds'] as const) {
+    // Omit absent optional fields so old imports retain their exact shape.
+    if (record[field] === undefined || (format === 'csv' && record[field] === '')) continue;
+    let raw: unknown = record[field];
+    if (format === 'csv' && typeof raw === 'string') raw = raw.trim().startsWith('[') ? embedded(raw, field, row, errors) : raw.split(';').map(value => value.trim()).filter(Boolean);
+    if (!Array.isArray(raw)) { error(field, `${field} must be an array of exact record IDs`); continue; }
+    const ids: string[] = [];
+    for (const id of raw) {
+      if (typeof id !== 'string' || !ID_PATTERN.test(id.trim())) error(field, `${field} contains an invalid record ID`);
+      else if (ids.includes(id.trim())) warnings.push({ row, field, message: `Repeated reference ${id.trim()} was deduplicated` });
+      else ids.push(id.trim());
+    }
+    result[field] = ids;
+  }
   for (const field of OPTIONAL_TEXT_FIELDS) {
     if (record[field] === undefined || record[field] === '') continue;
     if (typeof record[field] !== 'string') error(field, `${field} must be a string`);

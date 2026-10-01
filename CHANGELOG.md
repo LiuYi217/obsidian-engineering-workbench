@@ -2,7 +2,29 @@
 
 All notable user-facing changes are documented here. Versions follow semantic versioning while the project remains an early release.
 
-## 0.1.0 — 2026-10-01
+## Unreleased — 0.1.0 source extension
+
+The package version remains 0.1.0. This section does not announce a new release, tag, or published asset.
+
+### Added
+
+- Six primary views: Workbench, Projects, People, Meetings, Materials, and Weekly Plans
+- Project detail tabs for Overview, Tasks, People, Meetings, Documents, and Prototypes
+- Meeting records with pasted/imported minutes, original links, discussion/confirmed decisions, unresolved items, and task-linked actions with owner and due date
+- Immutable document/prototype version records, explicit separate adoption records, source/provider preservation, and exact-version task/meeting references
+- Version history and manually entered change/review notes; receiving or adopting a newer version never silently changes existing references
+- Guarded HTML, folder, ZIP, and HTTP(S) URL intake with explicit entry selection and original resource structure preserved
+- System-browser opening with desktop Electron support for local files and online URL support on mobile
+- Compact synthetic meetings and materials: two meetings, three prototype versions, one document version, and an adopted older version still pinned by a task
+
+### Boundaries
+
+- No audio transcription, automated factual decisions, content diff engine, automatic adoption, or inferred successful preview
+- No prototype iframe, in-plugin execution, hosting server, background source retrieval, or silent local-server startup
+- Archive validation guards paths, size and integrity; it does not certify executable prototype content as safe
+- Current extension verification is recorded separately from historical checks in `docs/verification.md`
+
+## 0.1.0 — 2026-10-01 (earlier implementation)
 
 Initial local-first engineering lead workbench for Obsidian.
 

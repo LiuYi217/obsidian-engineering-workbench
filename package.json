@@ -26,5 +26,8 @@
     "obsidian": {
       "moment": "2.31.0"
     }
+  },
+  "dependencies": {
+    "fflate": "0.8.3"
   }
 }

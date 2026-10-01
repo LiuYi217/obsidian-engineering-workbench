@@ -1,5 +1,5 @@
 import { test,expect } from '@playwright/test';
-const tabs=['工作台','项目','人员','协调','周计划'];
+const tabs=['工作台','项目','人员','会议','资料','周计划'];
 for(const tab of tabs)test(`${tab}: shared data renders without overflow`,async({page},testInfo)=>{
  const errors:string[]=[];page.on('pageerror',error=>errors.push(error.message));
  await page.goto('/');await page.getByRole('tab',{name:tab,exact:true}).click();
@@ -32,4 +32,22 @@ test('people show unknown capacity and cross-project workload caveat',async({pag
  await expect(page.getByText('所有人员负荷跨项目汇总',{exact:false})).not.toBeVisible();
  await page.locator('.elw-help summary').click();
  await expect(page.getByText('所有人员负荷跨项目汇总',{exact:false})).toBeVisible();
+});
+
+test('project details reuse tasks, people, meetings and exact material versions',async({page})=>{
+ await page.goto('/?tab=projects');await page.getByRole('button',{name:'详情 →',exact:true}).first().click();
+ const tabs=page.getByRole('navigation',{name:'项目详情'});
+ for(const label of ['概览','任务','人员','会议','文档','原型']){await tabs.getByRole('button',{name:label,exact:true}).click();await expect(tabs.getByRole('button',{name:label,exact:true})).toHaveAttribute('aria-pressed','true');}
+ await expect(page.locator('.elw-table')).toBeVisible();await page.getByRole('button',{name:'← 全部项目',exact:true}).click();await expect(tabs).toHaveCount(0);
+});
+test('meeting decisions and actions precede collapsed transcript',async({page})=>{
+ await page.goto('/?tab=meetings');await expect(page.locator('.elw-meeting').first()).toBeVisible();
+ const meeting=page.locator('.elw-meeting').filter({has:page.getByRole('heading',{name:'已确认',exact:true})}).first();
+ await expect(meeting.getByRole('heading',{name:'已确认',exact:true})).toBeVisible();
+ const transcript=meeting.locator('.elw-transcript');await expect(transcript).not.toBeVisible();await meeting.locator('summary').filter({hasText:'原文 / 录音'}).click();await expect(transcript).toBeVisible();
+});
+test('material list keeps old adopted and incoming versions distinct',async({page})=>{
+ await page.goto('/?tab=materials');const table=page.locator('.elw-table');await expect(table.getByRole('columnheader',{name:'版本',exact:true})).toBeVisible();
+ await expect(table.getByText('已采纳',{exact:true})).toBeVisible();await expect(table.getByText('待确认',{exact:true}).first()).toBeVisible();
+ const names=table.locator('tbody tr td:first-child button');await names.first().click();await expect(page.getByRole('dialog')).toBeVisible();await page.getByRole('button',{name:'关闭',exact:true}).click();
 });

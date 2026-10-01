@@ -13,6 +13,8 @@ export interface Task {
   nextAction: string; source: string; lastUpdated: string;
   risk?: string; blocker?: string; contact?: string; coordinationDue?: string; path?: string;
   facts?: EvidenceNote[]; forecasts?: EvidenceNote[]; judgments?: EvidenceNote[];
+  /** Explicit source links. Material IDs pin exact immutable version records, never the latest version. */
+  meetingIds?: string[]; materialVersionIds?: string[];
 }
 export interface Milestone { id: string; title: string; date: string; status?: 'planned' | 'completed'; source?: string }
 export interface Project { id: string; name: string; owner?: string; targetDate?: string; milestones?: Milestone[]; description?: string; source?: string; path?: string }
@@ -29,7 +31,37 @@ export interface Baseline {
   readonly period?: Readonly<Period>; readonly tasks: readonly Task[]; readonly schemaVersion: 1;
   readonly path?: string;
 }
-export interface WorkbenchData { schemaVersion: 1; tasks: Task[]; projects: Project[]; people: Person[]; modules: Module[]; decisions: Decision[]; baselines: Baseline[] }
+export interface MaterialFile { readonly path: string; readonly size: number; readonly sha256?: string }
+/** A captured version is append-only. Review/adoption never changes an earlier version or task pin. */
+export interface MaterialVersion {
+  readonly id: string; readonly materialId: string; readonly title: string;
+  readonly kind: 'document' | 'prototype'; readonly version: string; readonly project: string;
+  readonly module?: string; readonly iteration?: string; readonly status: 'incoming' | 'reviewed' | 'archived';
+  readonly summary: string; readonly source: string; readonly provider: string;
+  readonly sourceUrl?: string; readonly sourceFile?: string; readonly packagePath?: string; readonly entryPath?: string;
+  readonly files?: readonly MaterialFile[]; readonly requiresNetwork: boolean | 'unknown'; readonly requiresLogin: boolean | 'unknown';
+  readonly runRequirements?: string; readonly previewStatus: 'unknown' | 'pass' | 'fail';
+  readonly previewNotes?: string; readonly changeNotes?: string; readonly reviewIssues: readonly string[];
+  readonly createdAt: string; readonly lastUpdated: string; readonly path?: string;
+}
+/** Every adoption is a separate immutable decision about one exact version. */
+export interface Adoption {
+  readonly id: string; readonly materialId: string; readonly versionId: string; readonly project: string;
+  readonly adoptedAt: string; readonly source: string; readonly path?: string;
+}
+export interface MeetingDecision { id: string; text: string; state: 'discussion' | 'suggestion' | 'confirmed'; source?: string }
+export interface MeetingAction { id: string; text: string; taskId?: string; owner?: string; due?: string; state: 'open' | 'done' }
+export interface Meeting {
+  id: string; title: string; startAt: string; project: string; participants: string[];
+  module?: string; iteration?: string; decisions: MeetingDecision[]; unresolved: string[]; actions: MeetingAction[];
+  materialVersionIds: string[]; recordingUrl?: string; transcriptUrl?: string; transcript: string;
+  source: string; lastUpdated: string; path?: string;
+}
+/** Optional collections preserve compatibility with schemaVersion 1 Markdown and old fixtures. */
+export interface WorkbenchData {
+  schemaVersion: 1; tasks: Task[]; projects: Project[]; people: Person[]; modules: Module[]; decisions: Decision[]; baselines: Baseline[];
+  materialVersions?: MaterialVersion[]; adoptions?: Adoption[]; meetings?: Meeting[];
+}
 export interface WorkbenchSettings { closureStatus: ClosureStatus; staleDays: number; calendar: WorkingCalendar }
 export interface CapacityResult {
   status: 'known' | 'unknown'; workingDays: number; grossHours: number | null;
@@ -46,7 +78,7 @@ export interface BaselineComparison { baselineId: string; changes: BaselineChang
 export interface SummaryOptions extends ExceptionOptions { period: Period }
 export const DEFAULT_CALENDAR: WorkingCalendar = { weekdays: [1, 2, 3, 4, 5], exceptions: {} };
 export const DEFAULT_SETTINGS: WorkbenchSettings = { closureStatus: 'test-passed', staleDays: 7, calendar: DEFAULT_CALENDAR };
-export function emptyWorkbenchData(): WorkbenchData { return { schemaVersion: 1, tasks: [], projects: [], people: [], modules: [], decisions: [], baselines: [] }; }
+export function emptyWorkbenchData(): WorkbenchData { return { schemaVersion: 1, tasks: [], projects: [], people: [], modules: [], decisions: [], baselines: [], materialVersions: [], adoptions: [], meetings: [] }; }
 
 const DAY_MS = 86_400_000;
 const STATUS_ORDER: Record<TaskStatus, number> = { planned: 0, 'in-progress': 1, blocked: 1, 'dev-complete': 2, 'test-passed': 3, released: 4, accepted: 5, cancelled: -1 };
@@ -172,7 +204,7 @@ export function generateBaseline(tasks: readonly Task[], options: { id: string; 
   if (new Set(tasks.map(task => task.id)).size !== tasks.length) throw new RangeError('Cannot freeze a baseline with duplicate task IDs');
   return deepFreeze({ schemaVersion: 1 as const, ...clone(options), tasks: clone(tasks.filter(task => !options.period || taskTouchesPeriod(task, options.period)).sort(byId)) });
 }
-const BASELINE_FIELDS: (keyof Task)[] = ['title', 'project', 'module', 'executor', 'status', 'originalStart', 'originalDue', 'forecastDue', 'remainingHours', 'allocations', 'dependencies', 'nextAction', 'risk', 'blocker', 'contact', 'coordinationDue'];
+const BASELINE_FIELDS: (keyof Task)[] = ['title', 'project', 'module', 'executor', 'status', 'originalStart', 'originalDue', 'forecastDue', 'remainingHours', 'allocations', 'dependencies', 'nextAction', 'risk', 'blocker', 'contact', 'coordinationDue', 'meetingIds', 'materialVersionIds'];
 function stableValue(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(stableValue).join(',')}]`;
   if (value && typeof value === 'object') return `{${Object.entries(value).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0).map(([key, item]) => `${JSON.stringify(key)}:${stableValue(item)}`).join(',')}}`;

@@ -8,7 +8,7 @@
 
 记录的 YAML frontmatter 通过两个字段识别：
 
-- `workbench`：`task`、`project`、`module`、`person`、`decision` 或 `baseline`
+- `workbench`：`task`、`project`、`module`、`person`、`decision`、`baseline`、`meeting`、`material-version` 或 `adoption`
 - `id`：非空、稳定的字符串；同类记录中必须唯一
 
 项目、模块、执行人、依赖、关联任务使用 ID，而不是名称。改名不必重写所有引用。`path` 是加载器给出的当前文件路径，不需手工写入。
@@ -81,6 +81,8 @@ judgments:
 | `risk` / `blocker` | 风险和当前阻塞的简短描述 |
 | `contact` / `coordinationDue` | 协调对象与需要跟进的日期 |
 | `facts` / `forecasts` / `judgments` | 分开的事实、预测、人工判断记录 |
+| `meetingIds` | 相关会议的稳定 ID；可选字符串数组 |
+| `materialVersionIds` | 精确资料版本 ID；可选字符串数组，不指向“最新版本” |
 
 每个 `EvidenceNote` 都包含 `text`、`source`、`recordedAt`。来源字段不证明内容真实；负责人仍要核对原始记录。正文建议包含完整条件、待确认项和相关会议链接。
 
@@ -276,3 +278,106 @@ milestones:
 ```
 
 `status` 可为 `planned` 或 `completed`。项目视图列出里程碑，周会摘要引用所选周期内的里程碑及来源。
+
+## 9. 会议 Meeting
+
+会议使用 `workbench: meeting`。关键字段：
+
+| 字段 | 含义 |
+| --- | --- |
+| `id` / `title` / `startAt` | 稳定 ID、名称、带时区的会议时间 |
+| `project` / `module` / `iteration` | 所属项目及可选模块、迭代 |
+| `participants` | 参与人字符串数组；有人员记录时建议使用稳定 ID |
+| `transcript` | 用户粘贴或导入的纪要原文；不由插件转写音频 |
+| `recordingUrl` / `transcriptUrl` | 可选的原始录音、转写来源 HTTP(S) URL |
+| `decisions` | `{ id, text, state, source? }`；状态为 `discussion`、`suggestion`、`confirmed` |
+| `unresolved` | 未决问题的字符串数组 |
+| `actions` | `{ id, text, taskId?, owner?, due?, state }`；状态为 `open` 或 `done` |
+| `materialVersionIds` | 本次讨论依据的确切版本 ID |
+| `source` / `lastUpdated` | 原始来源与更新时间 |
+
+行动项的 `taskId` 可关联已有任务；`owner` 为负责人标识，`due` 是明确的 ISO 日期。关联已有任务时，表单显示该任务当前执行人与预测日期，并在保存前复核；它不会将会议行动反写为任务承诺。未知负责人或期限不能凭原文中含糊指代自动补齐。会议的决定状态和行动状态不会自动更新关联任务状态。
+
+```yaml
+---
+workbench: meeting
+id: demo-meeting-001
+title: "【虚构】接入评审"
+startAt: "2026-10-01T09:00:00Z"
+project: demo-project-001
+participants: [demo-person-001]
+transcript: "成员甲：按 v0.2 完成联调；新版入口仍待确认。"
+decisions:
+  - id: demo-meeting-decision-001
+    text: "按 v0.2 完成联调"
+    state: confirmed
+    source: "虚构会议原文"
+unresolved: ["新版入口是否保留旧路径"]
+actions:
+  - id: demo-meeting-action-001
+    text: "补齐入口对照"
+    taskId: demo-task-001
+    owner: demo-person-001
+    due: "2026-10-02"
+    state: open
+materialVersionIds: [demo-prototype-v2]
+recordingUrl: "https://example.com/synthetic/meeting-001/recording"
+transcriptUrl: "https://example.com/synthetic/meeting-001/transcript"
+source: "虚构会议原文"
+lastUpdated: "2026-10-01T10:00:00Z"
+---
+```
+
+所有示例链接只是虚构引用，不含可用录音、真实人物或登录资料。
+
+## 10. 资料版本 MaterialVersion 与采用 Adoption
+
+`MaterialVersion` 保存收到当时的一个版本。`materialId` 是跨版本的资料身份，`id` 是这个版本的唯一身份。不同版本必须使用不同 `id`；重复的版本记录不能覆盖。文档与原型共用此模型，`kind` 分别为 `document`、`prototype`。
+
+| 字段 | 含义 |
+| --- | --- |
+| `id` / `materialId` / `version` | 精确版本 ID、资料系列 ID、人类可读版本号 |
+| `title` / `kind` / `project` | 名称、文档或原型、所属项目 |
+| `module` / `iteration` | 可选模块、迭代 |
+| `status` | `incoming`、`reviewed`、`archived`；不是是否采用 |
+| `summary` / `changeNotes` / `reviewIssues` | 摘要、相对之前的人工变更说明、评审问题 |
+| `source` / `provider` | 原始来源与提供者，不能只保留摘要而丢弃原出处 |
+| `sourceUrl` / `sourceFile` | 可选的来源 URL、原始文件引用 |
+| `packagePath` / `entryPath` / `files` | Vault 内资源包目录、完整入口路径、文件清单；每项含相对 `path`、`size`、可选 `sha256` |
+| `requiresNetwork` / `requiresLogin` / `runRequirements` | 运行依赖声明，可为 `true`、`false`、`unknown`；不自动证明网页安全或可离线运行 |
+| `previewStatus` / `previewNotes` | `unknown`、`pass`、`fail` 及人工预览记录 |
+| `createdAt` / `lastUpdated` | 此次版本记录的创建和记录时间 |
+
+记录类型为 `workbench: material-version`，文件位于 `Materials/`；采用记录位于 `Adoptions/`。
+
+源 URL 保留收到时的链接，但远端内容仍可能改变；不可变的是本地版本记录及已保存文件，不是来源站点。
+
+资料记录创建后只追加，不通过更新旧版本改变来源、评审或采用结果。发现错误、需要补充评审或收到修订时，应创建新的版本记录，保留旧记录与来源。`readonly` 和追加式工作流不能阻止 Vault 文件被其他程序手改，因此不构成密码学防篡改保证。
+
+采用以独立的 `workbench: adoption` 记录保存，不改写资料版本：
+
+```yaml
+---
+workbench: adoption
+id: demo-adoption-001
+materialId: demo-prototype
+versionId: demo-prototype-v2
+project: demo-project-001
+adoptedAt: "2026-10-01T10:00:00Z"
+source: "虚构接入评审中确认采用 v0.2"
+---
+```
+
+该条采用明确关联 `versionId`，并核对同一个资料身份与项目。再次采用应新增采用记录，保留以前的采用决定。新收到的 v0.3 不会自动变成已采用版本；采用 v0.3 也不会改写任务/会议原本固定的 v0.2 引用。记录不存在、项目不匹配或引用失效时，应先处理校验提醒，不回退到看似相近的版本。
+
+`WorkbenchData.materialVersions`、`adoptions`、`meetings` 及任务中的引用数组是可选字段，保留 `schemaVersion: 1` 旧记录兼容性。旧记录缺少这些集合不等于损坏；不能为了填满新界面制造会议、决定或来源。
+
+## 11. 本地原型资源
+
+一个资料版本可以引用单 HTML、带相对资源的文件夹、ZIP 导入包或 HTTP(S) URL。资源保存位置与入口写在该版本上，任务只引用版本 ID，不直接跟随一个可被新版替换的“最新”文件。
+
+实际保存结构为 `Assets/<安全版本文件名>/files/<原始相对路径>`；原始 ZIP 单独保留于该版本的 `original/<原始 ZIP 文件名>`。单 HTML 与文件夹的原始文件字节保存在 `files/`，不额外生成一个改写过的原型。
+
+导入保留相对目录结构，`entryPath` 必须指向 `packagePath/files/` 下文件清单中的有效 HTML；`files[].path` 保留输入的相对路径。归档在写入前检查不安全路径和条目；不允许路径穿越或用外部绝对路径写出目标目录。检查成功不代表脚本可信或浏览器行为安全。原型不在插件的 DOM/iframe 内执行，也不由插件启动本地服务。
+
+本地文件通过桌面 Electron 适配器交给系统浏览器；移动端不支持本地外部打开，线上 HTTP(S) 链接仍可用。需要服务器、网络或登录的原型要如实记录运行要求；本插件不会静默补起服务或代为登录。

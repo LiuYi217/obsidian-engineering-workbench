@@ -1,0 +1,35 @@
+import type { Meeting, MaterialVersion, WorkbenchData, Task, Period, WorkbenchSettings } from './domain';
+import { calculateCapacity, calculateLoad } from './domain';
+import { getAdoptedVersion } from './knowledge';
+export interface KnowledgeUIActions { meeting:(meeting:Meeting)=>void; createMeeting:(project?:string)=>void; material:(version:MaterialVersion)=>void; createMaterial:(project?:string)=>void; openMaterial:(version:MaterialVersion)=>void; task:(task:Task)=>void; }
+export type ProjectTab='overview'|'tasks'|'people'|'meetings'|'documents'|'prototypes';
+export const PROJECT_TABS:Record<ProjectTab,string>={overview:'概览',tasks:'任务',people:'人员',meetings:'会议',documents:'文档',prototypes:'原型'};
+function el<K extends keyof HTMLElementTagNameMap>(tag:K,cls='',text?:string){const e=document.createElement(tag);e.className=cls;if(text!==undefined)e.textContent=text;return e;}
+function btn(parent:HTMLElement,label:string,fn:()=>void,cls='elw-text-button'){const b=el('button',cls,label);b.type='button';b.addEventListener('click',fn);parent.append(b);return b;}
+const person=(data:WorkbenchData,id?:string)=>data.people.find(p=>p.id===id)?.name||id||'未分配';
+const project=(data:WorkbenchData,id:string)=>data.projects.find(p=>p.id===id)?.name||id;
+export function materialState(data:WorkbenchData,v:MaterialVersion){return getAdoptedVersion(data,v.materialId,v.project)?.id===v.id?'已采纳':v.status==='archived'?'已归档':v.status==='reviewed'?'已评审':'待确认';}
+export function renderMaterials(parent:HTMLElement,data:WorkbenchData,a:KnowledgeUIActions,options:{project?:string;kind?:MaterialVersion['kind'];search?:string}={}){
+  const top=el('div','elw-section-title');top.append(el('h2','',options.kind==='prototype'?'原型':options.kind==='document'?'文档':'版本库'));btn(top,'+ 资料',()=>a.createMaterial(options.project),'elw-button');parent.append(top);
+  const query=(options.search||'').toLowerCase(),versions=(data.materialVersions||[]).filter(v=>(!options.project||v.project===options.project)&&(!options.kind||v.kind===options.kind)&&(!query||[v.title,v.version,v.provider,v.summary,v.materialId].join(' ').toLowerCase().includes(query))).sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
+  if(!versions.length){parent.append(el('div','elw-empty','暂无资料'));return;}
+  const wrap=el('div','elw-table-wrap'),table=el('table','elw-table'),head=el('thead'),row=el('tr');['名称','类型','版本','状态','更新',''].forEach(t=>row.append(el('th','',t)));head.append(row);const body=el('tbody');
+  for(const v of versions){const tr=el('tr'),title=el('td'),open=el('td');const link=btn(title,v.title,()=>a.material(v));link.title=`${project(data,v.project)} · ${v.provider}\n${v.id}`;tr.append(title,el('td','',v.kind==='prototype'?'原型':'文档'),el('td','elw-nowrap',v.version),el('td','',materialState(data,v)),el('td','elw-nowrap',v.lastUpdated.slice(0,10)));btn(open,'打开 ↗',()=>a.openMaterial(v));tr.append(open);body.append(tr);}table.append(head,body);wrap.append(table);parent.append(wrap);
+}
+export function renderMeetings(parent:HTMLElement,data:WorkbenchData,a:KnowledgeUIActions,options:{project?:string;search?:string}={}){
+  const top=el('div','elw-section-title');top.append(el('h2','','会议记录'));btn(top,'+ 会议',()=>a.createMeeting(options.project),'elw-button');parent.append(top);const query=(options.search||'').toLowerCase();
+  const meetings=(data.meetings||[]).filter(m=>(!options.project||m.project===options.project)&&(!query||[m.title,m.project,...m.participants,...m.unresolved].join(' ').toLowerCase().includes(query))).sort((a,b)=>b.startAt.localeCompare(a.startAt));
+  if(!meetings.length){parent.append(el('div','elw-empty','暂无会议'));return;}
+  for(const m of meetings){const card=el('article','elw-panel elw-meeting');const header=el('div','elw-card-title');btn(header,m.title,()=>a.meeting(m),'elw-meeting-title elw-text-button');header.append(el('span','elw-date',m.startAt.replace('T',' ').slice(0,16)));card.append(header);card.append(el('p','elw-muted',`${project(data,m.project)} · ${m.participants.map(p=>person(data,p)).join('、')||'参会人未记录'}`));
+    const confirmed=m.decisions.filter(d=>d.state==='confirmed');if(confirmed.length){card.append(el('h3','','已确认'));confirmed.forEach(d=>card.append(el('p','elw-decision-line',d.text)));}
+    if(m.unresolved.length){card.append(el('h3','','待定'));m.unresolved.forEach(text=>card.append(el('p','elw-unresolved',text)));}
+    if(m.actions.length){card.append(el('h3','','行动'));for(const action of m.actions){const task=data.tasks.find(t=>t.id===action.taskId),row=el('div','elw-meeting-action');if(task)btn(row,action.text,()=>a.task(task));else row.append(el('span','',action.text));row.append(el('span','elw-muted',`${person(data,task?.executor||action.owner)} · ${task?.forecastDue||action.due||'未定日期'} · ${action.state==='done'?'已完成':'待办'}`));card.append(row);}}
+    const other=m.decisions.filter(d=>d.state!=='confirmed');if(other.length){const details=el('details','elw-disclosure');details.append(el('summary','','讨论 / 建议'));other.forEach(d=>details.append(el('p','',`${d.state==='suggestion'?'建议':'讨论'} · ${d.text}`)));card.append(details);}
+    if(m.materialVersionIds.length){const refs=el('details','elw-disclosure');refs.append(el('summary','','依据版本'));for(const versionId of m.materialVersionIds){const v=data.materialVersions?.find(x=>x.id===versionId);if(v)btn(refs,`${v.title} · ${v.version}`,()=>a.material(v));else refs.append(el('p','elw-danger',`版本缺失 ${versionId}`));}card.append(refs);}
+    if(m.transcript||m.recordingUrl||m.transcriptUrl){const raw=el('details','elw-disclosure');raw.append(el('summary','','原文 / 录音'));if(m.transcript)raw.append(el('pre','elw-transcript',m.transcript));if(m.recordingUrl||m.transcriptUrl)btn(raw,'查看来源链接',()=>a.meeting(m));card.append(raw);}parent.append(card);
+  }
+}
+export function renderProjectPeople(parent:HTMLElement,data:WorkbenchData,projectId:string,period:Period,settings:WorkbenchSettings){
+  const ids=new Set([...data.tasks.filter(t=>t.project===projectId).map(t=>t.executor),...data.modules.filter(m=>m.project===projectId).map(m=>m.owner||'')].filter(Boolean));const grid=el('div','elw-people-grid');
+  for(const id of ids){const p=data.people.find(p=>p.id===id)||{id,name:id},card=el('article','elw-panel');const cap=calculateCapacity(p,period,settings.calendar),load=calculateLoad(data.tasks,id,period,p.calendar||settings.calendar,settings.closureStatus);card.append(el('h3','',p.name),el('p','',`跨项目已排 ${load.allocatedHours}h / 可用 ${cap.availableHours===null?'未知':`${cap.availableHours}h`}`));const owned=data.modules.filter(m=>m.project===projectId&&m.owner===id);if(owned.length)card.append(el('p','elw-muted',`负责 ${owned.map(m=>m.name).join('、')}`));card.append(el('p','elw-muted',`${data.tasks.filter(t=>t.project===projectId&&t.executor===id).length} 项任务`));if(cap.availableHours===null||load.unallocatedTaskIds.length)card.append(el('p','elw-danger','余量待确认'));grid.append(card);}if(!ids.size)grid.append(el('div','elw-empty','暂无人员'));parent.append(grid);
+}
