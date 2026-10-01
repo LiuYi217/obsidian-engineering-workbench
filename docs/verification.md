@@ -1,55 +1,41 @@
 # v0.1.0 verification record
 
-The meeting/material/prototype source extension remains untagged at package version 0.1.0. Historical results below apply only to the earlier implementation and must not be read as verification of the extension.
+The six-view meeting/material/prototype extension remains at package version 0.1.0 with no release tag created by this task.
 
-## Current extension checks
+## Passed
 
-- The synthetic fixture was checked directly with all nine managed-record validators across 2026-09-28, 2026-10-01, 2026-10-04, 2027-01-01, and 2028-02-29; all records passed with no knowledge-reference warnings
-- Each fixture contains four material-version records (three versions of one prototype and one document), two meetings, an explicit adoption of v0.2, and a task that remains pinned to v0.2 while v0.3 is incoming
-- A direct adoption simulation across the same five dates confirmed that adopting v0.3 changes the selected adoption but preserves the task’s v0.2 pin and all immutable material records
-- Demo source URLs use example.com only; local source references do not create or host any prototype assets
-- `npm run check` passes strict TypeScript, 105 core/security/native-contract tests, and a production build
-- `npm audit` reports 0 vulnerabilities; fflate is pinned to patched 0.8.3
-- `npm run package` produces the installable assets; `npm run preview:build` and discovery of 24 browser cases pass
-- Browser execution of the extension and real-host verification are still pending at this snapshot
+Verified on 2026-10-01. Runtime commit: `ecaeae5d3b7682ec6aa918f4fae3436afc43fcb9`.
 
-The fixture checks are focused source-level checks, not Obsidian or browser tests.
+- Strict TypeScript, production build and packaging pass
+- **105 tests pass**, including calendar/capacity/baseline/import compatibility, immutable exact version pins, meeting evidence, ZIP security and native interaction contracts
+- **24 Playwright cases pass** on GitHub Actions Ubuntu at desktop 1440px and mobile 390px: all six views, project detail tabs, meeting summary/transcript separation, material version states, responsive layout, filters, task details and keyboard navigation
+- **0 dependency vulnerabilities** from npm audit; runtime archive helper uses pinned fflate 0.8.3 and includes its MIT license
+- CI `main.js`, `manifest.json` and `styles.css` match local artifacts byte-for-byte
+- Twelve genuine CI screenshots were captured. Pixel review verified the principal desktop and narrow-screen views; mobile materials use labeled compact cards, with status/action text kept intact. Inapplicable date filters are absent from meeting/material history views
 
-## Historical baseline: before the extension
+Selected current screenshots are under `docs/screenshots/`. They show the shared browser renderer and synthetic data, not a live Obsidian application.
 
-Checked on 2026-10-01 in a Linux build container, Node.js 24.19.0.
+## Safety and data coverage
 
-### Passed locally (historical)
+- Old schemaVersion 1 records need no migration; optional meeting/version references remain optional
+- New arrivals do not automatically become adopted; immutable version records and adoption events preserve previous versions and exact task/meeting pins
+- Native-contract tests exercise adoption ABA tokens, serialized concurrent confirmations, duplicate identities arriving during asynchronous copy, partial-copy failures and safe retries, stale meeting edits, custom frontmatter and body preservation
+- External local opening checks the managed Assets/version subtree, manifest entry, all asset sizes/hashes, and stale metadata before and after confirmation; tests reject tampering and symlink escape
+- ZIP tests reject traversal, absolute/Windows paths, Unicode/case aliases, symlinks, special files, malformed headers, bad CRCs, oversized output and zip bombs; ZIP64 and encrypted archives fail closed. Original bytes and empty directories are preserved
+- Raw meeting text and suggestions do not become confirmed decisions automatically. Linking actions creates no duplicate tasks
+- Synthetic fixtures validate across weekday/weekend, year boundary and leap-day dates. Example URLs use example.com only
 
-- `npm run check`: strict TypeScript checking, 45 automated tests and production build
-- `npm audit`: 0 vulnerabilities after a targeted development-only Moment 2.31.0 override
-- `npm run package`: installable ZIP, standalone `main.js`, `manifest.json`, `styles.css` and SHA-256 checksums
-- `npm run preview:build`: reusable five-tab UI compiles as a browser test harness
-- GitHub Actions on commit `c7e8149`: all 16 desktop/mobile browser cases passed
-- Synthetic-data and authored-code privacy review: no real company/person data, credentials, analytics or runtime network calls found
-- Independent review of capacity, baseline, imports and data-preservation semantics; identified defects fixed and covered by regressions
+Native-contract tests bundle the actual store/modal code against a minimal in-memory Obsidian/DOM mock. They do not establish actual Obsidian YAML-engine or operating-system integration compatibility. Browser-harness actions for native file writes are mocked separately.
 
-Tests include actual calendar days/exceptions, partial-period allocations, completed allocation retention, zero/unknown capacity, closure criteria, cancelled tasks, dependency cycles, frozen weekly scope, malformed CSV/JSON, duplicate IDs, rule extraction, stale approvals, malformed Vault properties, and Chinese source-backed summaries.
+## Not yet verified / boundaries
 
-Seven tests bundle the actual plugin/store code against a minimal **mock** Obsidian/DOM host. They verify explicit confirmation/cancel, field clearing, blank effort rejection, immutable import previews, preservation of custom fields/body/original dates, baseline collision protection, progress preflight and partial-commit reporting. These are contract tests, not an actual Obsidian application or YAML-engine test.
+- Actual desktop Obsidian loading, file picker behavior, real processFrontMatter formatting and native Electron external-app dispatch
+- Actual Obsidian iOS/Android host behavior, all third-party themes, or every assistive technology
+- Local external file opening on mobile: deliberately unsupported, with a clear message; HTTP(S) source URLs can be opened externally
+- Transcription, external AI, TAPD/WBS writeback, automatic prototype execution, iframe embedding or a prototype hosting server: not implemented
+- Legacy Office `.doc`, `.xls`, `.ppt` formats are not supported by the document file picker/open action. Modern `.docx`, `.xlsx`, `.pptx`, plus PDF/Markdown/text/CSV/JSON are supported as source files; no content conversion is performed
+- No acceptance into Obsidian's official community plugin directory is claimed
 
-### Browser verification (historical)
+An archive-integrity check is not a malicious-code audit. Open only trusted content and test in a backup Vault first. Online URLs remain maintained by their external provider; a frozen reference does not freeze that website's remote bytes.
 
-The GitHub Actions `browser-harness` job is configured to install Playwright Chromium on an Ubuntu runner, exercise the shared renderer at 1440px and 390px, and upload screenshots/traces under `browser-harness-results`.
-
-All 16 browser cases passed on the Ubuntu CI runner for commit `c7e8149`, after the concise-panel revision. The revision removes decorative slogans, repeated explanations and metric footnotes while retaining accessible controls, sources, uncertainty and visible capacity/risk warnings. Calculation explanations and secondary details are available on demand. Tests cover the five views, 1440px/390px layouts, filters, empty states, task drill-in and close, keyboard focus, unknown capacity and uncaught JavaScript errors. The runtime assets produced by CI were compared byte-for-byte with the local build. All ten desktop/mobile screenshots were visually inspected; the captured viewports have readable text and no clipping or overlapping content. Selected screenshots are saved under `docs/screenshots/`.
-
-The local browser connection could not reach the container's loopback address, and local Chromium could not create a required OS socket. Browser evidence comes from GitHub Actions, not those failed local attempts. See the [Actions history](https://github.com/LiuYi217/obsidian-engineering-workbench/actions) and always check the exact published commit.
-
-The harness uses synthetic data and mocked actions for native Vault operations. Even a passing browser run does not establish native Obsidian host compatibility.
-
-## Not yet verified for the current extension
-
-- Actual desktop Obsidian application loading, enable/disable, real `processFrontMatter` serialization and interactions
-- Six-view navigation, project sub-tabs, meeting/material modals, and native prototype intake/opening in a real Obsidian host
-- Desktop Electron external-browser behavior and the mobile local-file unsupported state
-- Actual Obsidian mobile/iOS/Android host behavior
-- Every third-party theme and accessibility assistive technology
-- Acceptance into the official Obsidian community plugin directory
-
-Install into a test Vault first and keep a backup before using real project records. No external synchronization or LLM integration is implemented.
+[GitHub Actions history](https://github.com/LiuYi217/obsidian-engineering-workbench/actions)

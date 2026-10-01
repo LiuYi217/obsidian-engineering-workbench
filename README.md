@@ -8,7 +8,7 @@
 
 ![研发负责人工作台首页：完全虚构数据的共享渲染器截图](docs/screenshots/workbench-home.png)
 
-*截图来自此前五入口版本的 GitHub Actions 浏览器 UI 测试环境，使用完全虚构数据；不是当前六入口版本或 Obsidian 实机截图。[人员视图](docs/screenshots/workbench-people.png) · [390px 窄屏视图](docs/screenshots/workbench-mobile.png)*
+*截图来自当前六入口版本的 GitHub Actions 浏览器 UI 测试环境，使用完全虚构数据；不是 Obsidian 实机截图。[会议](docs/screenshots/workbench-meetings.png) · [资料版本库](docs/screenshots/workbench-materials.png) · [窄屏资料卡片](docs/screenshots/materials-mobile.png) · [人员](docs/screenshots/workbench-people.png)*
 
 ## 它适合解决什么
 
@@ -240,7 +240,7 @@ Install matching `main.js`, `manifest.json`, and `styles.css` into `.obsidian/pl
 
 ## 验证状态
 
-此前版本在提交 `c7e8149` 完成 45 项核心测试及 16 项桌面/窄屏浏览器测试；这些历史结果不证明当前会议、资料与原型扩展通过验证。当前源码的最新检查、已覆盖边界与未验证范围以 [验证记录](docs/verification.md) 为准。
+当前会议、资料与原型扩展在提交 `ecaeae5` 通过 105 项核心/安全/模拟原生交互测试，以及 24 项桌面/窄屏浏览器测试；依赖审计为 0。真实 Obsidian 桌面和移动端仍未实测，详见 [验证记录](docs/verification.md)。
 
 基于模拟 Obsidian API 的契约测试不等于实机测试。尚未完成真实 Obsidian 桌面或移动端验证，也没有社区目录上架声明。
 
