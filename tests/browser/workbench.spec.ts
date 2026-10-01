@@ -41,13 +41,13 @@ test('project details reuse tasks, people, meetings and exact material versions'
  await expect(page.locator('.elw-table')).toBeVisible();await page.getByRole('button',{name:'← 全部项目',exact:true}).click();await expect(tabs).toHaveCount(0);
 });
 test('meeting decisions and actions precede collapsed transcript',async({page})=>{
- await page.goto('/?tab=meetings');await expect(page.locator('.elw-meeting').first()).toBeVisible();
+ await page.goto('/?tab=meetings');await expect(page.getByLabel('开始日期',{exact:true})).toHaveCount(0);await expect(page.locator('.elw-meeting').first()).toBeVisible();
  const meeting=page.locator('.elw-meeting').filter({has:page.getByRole('heading',{name:'已确认',exact:true})}).first();
  await expect(meeting.getByRole('heading',{name:'已确认',exact:true})).toBeVisible();
  const transcript=meeting.locator('.elw-transcript');await expect(transcript).not.toBeVisible();await meeting.locator('summary').filter({hasText:'原文 / 录音'}).click();await expect(transcript).toBeVisible();
 });
 test('material list keeps old adopted and incoming versions distinct',async({page})=>{
- await page.goto('/?tab=materials');const table=page.locator('.elw-table');await expect(table.getByRole('columnheader',{name:'版本',exact:true})).toBeVisible();
+ await page.goto('/?tab=materials');await expect(page.getByLabel('开始日期',{exact:true})).toHaveCount(0);const table=page.locator('.elw-table');if((page.viewportSize()?.width||0)>600)await expect(table.getByRole('columnheader',{name:'版本',exact:true})).toBeVisible();else{await expect(table.locator('td[data-label=版本]').first()).toBeVisible();expect(await table.locator('td[data-label=状态]').first().evaluate(el=>getComputedStyle(el).whiteSpace)).toBe('nowrap');}
  await expect(table.getByText('已采纳',{exact:true})).toBeVisible();await expect(table.getByText('待确认',{exact:true}).first()).toBeVisible();
  const names=table.locator('tbody tr td:first-child button');await names.first().click();await expect(page.getByRole('dialog')).toBeVisible();await page.getByRole('button',{name:'关闭',exact:true}).click();
 });
