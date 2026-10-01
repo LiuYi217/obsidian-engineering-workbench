@@ -6,6 +6,10 @@
 
 > 这是可安装的 Obsidian 插件项目，不是网页模拟器。v0.1.0 使用离线规则辅助整理和确定性计算，没有调用大语言模型，也不会把推测自动写成事实。项目当前不声称已上架 Obsidian 社区插件目录。
 
+![研发负责人工作台首页：完全虚构数据的共享渲染器截图](docs/screenshots/workbench-home.png)
+
+*截图来自 GitHub Actions 中的浏览器 UI 测试环境，使用完全虚构数据；不是 Obsidian 实机截图。[人员视图](docs/screenshots/workbench-people.png) · [390px 窄屏视图](docs/screenshots/workbench-mobile.png)*
+
 ## 它适合解决什么
 
 - 先看到阻塞、依赖、逾期、长期未更新、容量未知、超出容量和待协调事项，再进入具体任务
@@ -208,7 +212,7 @@ Install matching `main.js`, `manifest.json`, and `styles.css` into `.obsidian/pl
 
 v0.1.0 已通过严格 TypeScript 检查、45 项自动测试和生产打包。测试包含 7 项基于模拟 Obsidian API 的原生交互契约测试；它们不等于 Obsidian 实机测试。
 
-另有 16 项桌面/窄屏浏览器测试配置在 GitHub Actions 中，会输出共享渲染器的截图。请以相应提交的 CI 结果为准。初始打包环境无法启动浏览器，尚未完成真实 Obsidian 桌面或移动端验证，也没有社区目录上架声明。详见 [验证记录](docs/verification.md)。
+16 项桌面/窄屏浏览器测试已在 GitHub Actions Ubuntu 环境通过，并输出共享渲染器截图，覆盖五个视图、筛选、空态、键盘导航与任务详情开关。尚未完成真实 Obsidian 桌面或移动端验证，也没有社区目录上架声明。详见 [验证记录](docs/verification.md)。
 
 开发者可运行 `npm run preview:build`，然后 `node scripts/preview-server.mjs` 查看完全虚构数据的 UI 测试环境；该环境不会模拟 Vault 的原生写入。浏览器测试需先执行 `npx playwright install chromium`，再运行 `npm run test:browser`。
 

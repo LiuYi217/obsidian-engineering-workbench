@@ -21,5 +21,10 @@
     "obsidian": "^1.8.7",
     "tsx": "^4.19.2",
     "typescript": "^5.7.3"
+  },
+  "overrides": {
+    "obsidian": {
+      "moment": "2.31.0"
+    }
   }
 }
