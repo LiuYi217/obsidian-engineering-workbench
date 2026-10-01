@@ -51,3 +51,9 @@ test('material list keeps old adopted and incoming versions distinct',async({pag
  await expect(table.getByText('已采纳',{exact:true})).toBeVisible();await expect(table.getByText('待确认',{exact:true}).first()).toBeVisible();
  const names=table.locator('tbody tr td:first-child button');await names.first().click();await expect(page.getByRole('dialog')).toBeVisible();await page.getByRole('button',{name:'关闭',exact:true}).click();
 });
+
+test('meeting time uses local UTC+08 and exposes the timezone',async({page})=>{
+ await page.goto('/?tab=meetings');
+ await expect(page.locator('.elw-meeting .elw-date').filter({hasText:'2026-10-01 16:30 UTC+08:00'})).toBeVisible();
+ await expect(page.locator('.elw-meeting .elw-date').filter({hasText:'2026-09-24 17:00 UTC+08:00'})).toBeVisible();
+});

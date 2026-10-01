@@ -1,3 +1,4 @@
+import { formatLocalDateTime, compareInstantsNewestFirst } from './time';
 import type { Meeting, MaterialVersion, WorkbenchData, Task, Period, WorkbenchSettings } from './domain';
 import { calculateCapacity, calculateLoad } from './domain';
 import { getAdoptedVersion } from './knowledge';
@@ -18,9 +19,9 @@ export function renderMaterials(parent:HTMLElement,data:WorkbenchData,a:Knowledg
 }
 export function renderMeetings(parent:HTMLElement,data:WorkbenchData,a:KnowledgeUIActions,options:{project?:string;search?:string}={}){
   const top=el('div','elw-section-title');top.append(el('h2','','会议记录'));btn(top,'+ 会议',()=>a.createMeeting(options.project),'elw-button');parent.append(top);const query=(options.search||'').toLowerCase();
-  const meetings=(data.meetings||[]).filter(m=>(!options.project||m.project===options.project)&&(!query||[m.title,m.project,...m.participants,...m.unresolved].join(' ').toLowerCase().includes(query))).sort((a,b)=>b.startAt.localeCompare(a.startAt));
+  const meetings=(data.meetings||[]).filter(m=>(!options.project||m.project===options.project)&&(!query||[m.title,m.project,...m.participants,...m.unresolved].join(' ').toLowerCase().includes(query))).sort((a,b)=>compareInstantsNewestFirst(a.startAt,b.startAt)||a.id.localeCompare(b.id));
   if(!meetings.length){parent.append(el('div','elw-empty','暂无会议'));return;}
-  for(const m of meetings){const card=el('article','elw-panel elw-meeting');const header=el('div','elw-card-title');btn(header,m.title,()=>a.meeting(m),'elw-meeting-title elw-text-button');header.append(el('span','elw-date',m.startAt.replace('T',' ').slice(0,16)));card.append(header);card.append(el('p','elw-muted',`${project(data,m.project)} · ${m.participants.map(p=>person(data,p)).join('、')||'参会人未记录'}`));
+  for(const m of meetings){const card=el('article','elw-panel elw-meeting');const header=el('div','elw-card-title');btn(header,m.title,()=>a.meeting(m),'elw-meeting-title elw-text-button');header.append(el('span','elw-date',formatLocalDateTime(m.startAt)));card.append(header);card.append(el('p','elw-muted',`${project(data,m.project)} · ${m.participants.map(p=>person(data,p)).join('、')||'参会人未记录'}`));
     const confirmed=m.decisions.filter(d=>d.state==='confirmed');if(confirmed.length){card.append(el('h3','','已确认'));confirmed.forEach(d=>card.append(el('p','elw-decision-line',d.text)));}
     if(m.unresolved.length){card.append(el('h3','','待定'));m.unresolved.forEach(text=>card.append(el('p','elw-unresolved',text)));}
     if(m.actions.length){card.append(el('h3','','行动'));for(const action of m.actions){const task=data.tasks.find(t=>t.id===action.taskId),row=el('div','elw-meeting-action');if(task)btn(row,action.text,()=>a.task(task));else row.append(el('span','',action.text));row.append(el('span','elw-muted',`${person(data,task?.executor||action.owner)} · ${task?.forecastDue||action.due||'未定日期'} · ${action.state==='done'?'已完成':'待办'}`));card.append(row);}}
