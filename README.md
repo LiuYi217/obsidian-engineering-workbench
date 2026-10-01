@@ -70,18 +70,7 @@ Your Vault/
 
 先备份，再替换同一插件目录中的三个发行文件并重启。停用插件不会自动删除工作记录。若要卸载，建议先停用插件，保留或另行备份 `Engineering Workbench/`，再通过 Obsidian 的插件管理卸载。不要把删除记录目录误认为普通升级步骤。
 
-## 5 分钟体验
-
-1. 运行“创建示例工作台（完全虚构）”，阅读并确认创建操作
-2. 打开工作台，查看阻塞、逾期、未排期和容量异常
-3. 进入“人员”，对比成员甲的容量不足与成员丁的容量未知：**未知不是 0，也不是空闲**
-4. 进入“项目”，从“虚构·星桥接入”查看“开发完成”和“测试通过”的区别
-5. 进入“会议”和“资料”，核对已确认决定、待讨论项，以及同一原型的三个版本；已有任务仍引用已采用的旧版
-6. 进入“周计划”，比较冻结计划与新增的检索筛选任务，再预览周会摘要
-
-演示由 `createDemoData(today)` 在本地生成，默认使用当前本地日期所在的周；周范围按周一至周日生成，包含特殊工作日/休息日、请假、会议、支持和缓冲数据。包含两个会议、三个同源原型版本和一个文档版本；所有 URL 使用 example.com，本地原型只登记虚构引用，不创建或打开任何原型资源。全部项目、人员、工时、来源和决策均为虚构，不包含真实用户或组织资料，也不代表所在地的真实节假日日历。重复创建同 ID 记录不会静默覆盖已有文件。
-
-## 第一次接入真实工作
+## 开始使用
 
 1. 在设置中确认数据目录、默认闭环状态、过期提醒天数和默认工作日历
 2. 建立项目、模块和人员记录，给每个人填入已确认容量；未确认的容量保留缺失
@@ -92,7 +81,7 @@ Your Vault/
 
 TAPD/WBS 等业务系统仍由团队决定是否作为权威来源。此插件只读取人工导出的文件/文本并在 Vault 中整理，**没有自动双向同步、远程写回、实时状态保证或冲突自动裁决**。外部系统与 Vault 不一致时，应由负责人核对并保留来源。
 
-## 计算口径
+## 计算规则
 
 ### 闭环有明确含义
 
@@ -224,7 +213,7 @@ Engineering Lead Workbench is a native, local-first Obsidian community-plugin pr
 
 It offers explicit status semantics (default closure: test-passed), configurable working calendars, leave/meeting/support/buffer deductions, unknown-capacity warnings, period allocations, frozen planning snapshots, reviewed CSV/JSON imports, offline rule-assisted update previews, and deterministic source-backed meeting summaries. Meeting minutes are imported or pasted, reviewed, and explicitly confirmed; audio is not transcribed. Immutable document/prototype versions use separate adoption records, while tasks and meetings pin exact versions. Prototype intake accepts HTML, folders, ZIP, or online URLs with guarded local packaging. It does not embed a prototype, execute it in Obsidian, or run a hosting server. External local opening requires desktop Electron; mobile supports online URLs only. It does not call an LLM, sync with TAPD automatically, rank individual performance, or send vault contents to a service.
 
-Install matching `main.js`, `manifest.json`, and `styles.css` into `.obsidian/plugins/engineering-lead-workbench/`, then enable the plugin. This repository does not claim an approved community-directory listing. All bundled demo data is synthetic and generated relative to the current week.
+Install matching `main.js`, `manifest.json`, and `styles.css` into `.obsidian/plugins/engineering-lead-workbench/`, then enable the plugin. This repository does not claim an approved community-directory listing. Synthetic fixtures are development-only and excluded from the production plugin; there is no fictional-record creation command.
 
 ### Official developer references
 
@@ -246,4 +235,4 @@ Install matching `main.js`, `manifest.json`, and `styles.css` into `.obsidian/pl
 
 开发者可运行 `npm run preview:build`，然后 `node scripts/preview-server.mjs` 查看完全虚构数据的 UI 测试环境；该环境不会模拟 Vault 的原生写入。浏览器测试需先执行 `npx playwright install chromium`，再运行 `npm run test:browser`。
 
-CSV / JSON 导入示例见 [examples/](examples/)，均为固定日期的虚构任务。体验当前周请优先使用插件内的“创建示例工作台”命令。
+合成数据仅保留在 `tests/fixtures/`，供自动化测试和开发预览使用，不进入生产包。插件没有创建虚构记录的入口；更新不会删除 Vault 中已有的任何记录。

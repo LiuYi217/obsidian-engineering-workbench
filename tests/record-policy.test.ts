@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { safeFileName, validateManagedRecord, assertFreshTaskFields, stableValue } from '../src/record-policy';
-import { createDemoData } from '../src/demo';
-const task=createDemoData('2026-10-01').tasks[1];
+import { makeWorkbenchFixture } from './fixtures/workbench';
+const task=makeWorkbenchFixture('2026-10-01').tasks[1];
 test('long Unicode IDs retain distinct stable safe filenames',()=>{const prefix='很长的中文任务'.repeat(12);assert.notEqual(safeFileName(prefix+'甲'),safeFileName(prefix+'乙'));assert.equal(safeFileName(prefix),safeFileName(prefix));assert(!/[\/\\]/.test(safeFileName('../x')));});
 test('strict vault record boundary rejects coercible and missing task fields',()=>{assert.deepEqual(validateManagedRecord('task',{...task}),[]);for(const malformed of [{remainingHours:'8'},{originalStart:' 2026-09-28 '},{status:' planned '},{lastUpdated:' 2026-10-01 '},{allocations:undefined},{dependencies:undefined},{allocations:[{}]},{forecastDue:'2026-02-30'},{allocations:[{periodStart:'2026-10-01',periodEnd:'2026-10-02',hours:'8'}]}])assert(validateManagedRecord('task',{...task,...malformed}).length);});
 test('malformed people/calendars/baselines/decisions cannot enter rendering',()=>{for(const capacity of [{hoursPerDay:-1},{hoursPerDay:'8'},{meetings:[{}]},{leave:'bad'}])assert(validateManagedRecord('person',{id:'p',name:'P',capacity}).length);assert(validateManagedRecord('person',{id:'p',name:'P',calendar:{weekdays:[8]}}).length);assert(validateManagedRecord('baseline',{id:'b',name:'B',createdAt:'today',schemaVersion:1,tasks:[{}]}).length);assert(validateManagedRecord('decision',{id:'d',title:'D',date:'2026-02-30'}).length);});

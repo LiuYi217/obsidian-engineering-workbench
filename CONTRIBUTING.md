@@ -10,7 +10,7 @@
 4. Copy `main.js`, `styles.css` and `manifest.json` to a **test Vault** under `.obsidian/plugins/engineering-lead-workbench/`
 5. Reload the plugin and follow `docs/release-checklist.md`
 
-No credentials or external services are needed. Please never commit a real Vault, customer data, employee information, credentials or secrets. Use the synthetic demo and fixtures.
+No credentials or external services are needed. Please never commit a real Vault, customer data, employee information, credentials or secrets. Use the development-only synthetic fixtures in `tests/fixtures/`; never import them from production `src/` code.
 
 ## Data safety requirements
 

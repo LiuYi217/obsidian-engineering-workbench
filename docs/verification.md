@@ -1,5 +1,9 @@
 # v0.1.0 verification record
 
+## Latest removal patch
+
+The global tab help, fictional-record creation feature and empty project-scope scaffold have been removed. The latest local aggregate passes 117 tests, strict TypeScript and production build. Production dependency-graph tests prove fixture data is not bundled; native command-registration and existing-note preservation tests pass. Thirty browser cases are prepared, including all six tabs and empty/scaffold states; remote execution of this removal patch is pending. Earlier verified CI below applies to the pre-removal runtime.
+
 The six-view meeting/material/prototype extension remains at package version 0.1.0 with no release tag created by this task.
 
 ## Passed

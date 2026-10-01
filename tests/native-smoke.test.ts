@@ -9,7 +9,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { build } from 'esbuild';
-import { createDemoData } from '../src/demo';
+import { makeWorkbenchFixture } from './fixtures/workbench';
 import { generateBaseline, type Task } from '../src/domain';
 
 type Listener = (event: { target: SmokeNode }) => unknown;
@@ -78,7 +78,7 @@ const find = (modal: any, predicate: (node: SmokeNode) => boolean): SmokeNode =>
 const control = (modal: any, label: string) => find(modal, node => node.attrs['aria-label'] === label);
 const click = (modal: any, label: string) => find(modal, node => node.tagName === 'button' && node.textContent === label).dispatch('click');
 const flush = () => new Promise<void>(resolve => setImmediate(resolve));
-const sample = (id = 'A'): Task => ({ ...createDemoData('2026-10-01').tasks[1], id, status: 'planned', blocker: 'Old blocker', risk: 'Old risk', contact: 'Old contact', coordinationDue: '2026-10-02' });
+const sample = (id = 'A'): Task => ({ ...makeWorkbenchFixture('2026-10-01').tasks[1], id, status: 'planned', blocker: 'Old blocker', risk: 'Old risk', contact: 'Old contact', coordinationDue: '2026-10-02' });
 function host() {
   const files = new Map<string, FileStub>(), folders = new Set<string>();
   const app = { vault: {
@@ -182,4 +182,14 @@ test('native progress reports partial committed IDs and removes stale review on 
   click(modal, '确认写入所选建议'); await flush();
   assert.deepEqual(writes, ['A']); assert.match(find(modal, n => n.className === 'elw-error').textContent, /已更新 1 条（A）.*Late conflict/);
   assert(!flatten(modal.contentEl).some(n => n.textContent === '确认写入所选建议'));
+});
+
+test('native command registration exposes no fictional-record creation command',async()=>{
+ const h=host(),commands:{id:string;name:string}[]=[];const plugin=new native.default();
+ Object.assign(plugin,{app:{...h.app,workspace:{onLayoutReady:()=>{},getLeavesOfType:()=>[]},vault:{...h.app.vault,on:()=>({})}},loadData:async()=>null,registerView:()=>{},addRibbonIcon:()=>{},addCommand:(command:{id:string;name:string})=>commands.push(command),addSettingTab:()=>{},registerEvent:()=>{}});
+ await plugin.onload();assert(commands.some(command=>command.id==='open-workbench'));assert(commands.some(command=>command.id==='new-meeting'));assert(commands.every(command=>!/(demo|虚构|示例)/i.test(command.id+' '+command.name)));
+});
+test('feature removal preserves pre-existing records, including synthetic-labeled notes',async()=>{
+ const h=host();const file=await h.store.create('task',{...sample('demo-existing-task'),title:'已有记录',source:'历史虚构记录'},'# Preserve existing user note\n');const before=file.content;
+ const data=await h.store.load();assert.equal(data.tasks.length,1);assert.equal(data.tasks[0].id,'demo-existing-task');assert.equal(h.files.size,1);assert.equal(file.content,before);
 });

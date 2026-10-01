@@ -38,7 +38,7 @@ Initial local-first engineering lead workbench for Obsidian.
 - CSV/JSON import previews with validation and duplicate detection before confirmed writes
 - Offline rule-assisted progress review with explicit confirmation and pending-note handling
 - Frozen baseline comparison and deterministic, source-backed weekly meeting reports
-- Entirely synthetic, current-week demo data with clear caveats
+- Development-only synthetic fixtures for automated verification
 - Chinese documentation, English overview, MIT license, build and release workflow
 
 ### Boundaries
@@ -50,7 +50,7 @@ Initial local-first engineering lead workbench for Obsidian.
 ### 界面精简
 
 - 五个面板移除标语、重复说明、副标题和指标脚注
-- 口径、容量明细和基线详情改为按需展开
+- 容量明细和基线详情按需展开
 - 保留风险原因、未知容量、超量、未排期提示，以及关键字段标签
 - 更新桌面和 390px 窄屏 CI 截图；45 项核心测试和 16 项浏览器测试通过
 
@@ -58,3 +58,10 @@ Initial local-first engineering lead workbench for Obsidian.
 
 - 会议卡片、确认预览和任务引用使用本地时间，并显示 UTC 偏移
 - 按真实时间排序；编辑时间正确往返 ISO UTC，补充 UTC+08 与夏令时边界测试
+
+### 移除无用入口
+
+- 删除六个页面顶部的“口径”入口及相关代码
+- 删除虚构示例创建命令、按钮、写入方法和用户导入示例文件
+- 合成数据移至测试夹具，不打包到生产插件；已有 Vault 记录保持原样
+- 新项目不再生成范围占位句；空白与旧占位描述不渲染空块，真实范围内容保留

@@ -8,7 +8,9 @@ for(const tab of tabs)test(`${tab}: shared data renders without overflow`,async(
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1)).toBeTruthy();
  expect(errors).toEqual([]);
  await expect(page.getByText('CLARITY BEFORE VELOCITY',{exact:true})).toHaveCount(0);
- await expect(page.locator('.elw-help')).not.toHaveAttribute('open','');
+ await expect(page.locator('.elw-help')).toHaveCount(0);
+ await expect(page.getByText('口径',{exact:true})).toHaveCount(0);
+ await expect(page.getByRole('button',{name:/创建.*示例/})).toHaveCount(0);
  await page.screenshot({path:testInfo.outputPath(`${testInfo.project.name}-${tab}.png`),fullPage:true});
 });
 test('project/search filters, empty state, task drill-in and close',async({page})=>{
@@ -26,12 +28,10 @@ test('keyboard tab navigation restores focus after rerender',async({page})=>{
  await expect(page.getByRole('tab',{name:'项目',exact:true})).toBeFocused();
  await page.getByRole('tab',{name:'项目',exact:true}).press('End');await expect(page.getByRole('tab',{name:'周计划',exact:true})).toBeFocused();
 });
-test('people show unknown capacity and cross-project workload caveat',async({page})=>{
+test('people retain unknown capacity and cross-project scope without global help',async({page})=>{
  await page.goto('/?tab=people');await expect(page.getByText('容量未知',{exact:true})).toBeVisible();
  await expect(page.getByText('跨项目',{exact:true})).toBeVisible();
- await expect(page.getByText('所有人员负荷跨项目汇总',{exact:false})).not.toBeVisible();
- await page.locator('.elw-help summary').click();
- await expect(page.getByText('所有人员负荷跨项目汇总',{exact:false})).toBeVisible();
+ await expect(page.locator('.elw-help')).toHaveCount(0);
 });
 
 test('project details reuse tasks, people, meetings and exact material versions',async({page})=>{
@@ -56,4 +56,16 @@ test('meeting time uses local UTC+08 and exposes the timezone',async({page})=>{
  await page.goto('/?tab=meetings');
  await expect(page.locator('.elw-meeting .elw-date').filter({hasText:'2026-10-01 16:30 UTC+08:00'})).toBeVisible();
  await expect(page.locator('.elw-meeting .elw-date').filter({hasText:'2026-09-24 17:00 UTC+08:00'})).toBeVisible();
+});
+
+test('empty workbench offers only real task/import actions, with no fictional creator',async({page},testInfo)=>{
+ await page.goto('/?empty=1');await expect(page.getByRole('heading',{name:'暂无任务',exact:true})).toBeVisible();
+ const empty=page.locator('.elw-empty');await expect(empty.getByRole('button',{name:'新建任务',exact:true})).toBeVisible();await expect(empty.getByRole('button',{name:'导入 CSV / JSON',exact:true})).toBeVisible();
+ await expect(page.getByRole('button',{name:/创建.*示例|创建虚构/})).toHaveCount(0);await expect(page.getByText('口径',{exact:true})).toHaveCount(0);
+ await page.screenshot({path:testInfo.outputPath(`${testInfo.project.name}-empty.png`),fullPage:true});
+});
+
+test('project scope has no blank or scaffold block and preserves real content',async({page})=>{
+ for(const scope of ['empty','placeholder']){await page.goto(`/?tab=projects&scope=${scope}`);await expect(page.locator('.elw-project-grid summary').filter({hasText:'范围'})).toHaveCount(0);await expect(page.getByText('请填写范围、目标和验收边界',{exact:true})).toHaveCount(0);}
+ await page.goto('/?tab=projects&scope=real');await page.locator('.elw-project-grid summary').filter({hasText:'范围'}).click();await expect(page.getByText('真实范围：只交付接入模块；验收：边界用例通过。',{exact:true})).toBeVisible();
 });

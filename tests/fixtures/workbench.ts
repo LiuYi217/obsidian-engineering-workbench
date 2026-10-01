@@ -1,7 +1,7 @@
-import type { Allocation, MaterialVersion, Meeting, Task, WorkbenchData } from './domain';
+import type { Allocation, MaterialVersion, Meeting, Task, WorkbenchData } from '../../src/domain';
 
-/** Completely synthetic fixture. No real people, projects, calendars, or external IDs. */
-export const DEMO_NOTICE = '全部为虚构演示数据，不代表真实项目、人员、工时或绩效';
+/** DEV/TEST ONLY. Never import this module from src/. Completely synthetic fixture. No real people, projects, calendars, or external IDs. */
+export const FIXTURE_NOTICE = '全部为虚构演示数据，不代表真实项目、人员、工时或绩效';
 
 function localISODate(): string {
   const date = new Date();
@@ -18,7 +18,7 @@ function shift(date: string, days: number): string {
 }
 
 /** Dates follow the local current week unless an explicit calendar date is provided. */
-export function createDemoData(today = localISODate()): WorkbenchData {
+export function makeWorkbenchFixture(today = localISODate()): WorkbenchData {
   // Validate once, and perform subsequent date arithmetic in UTC to avoid DST shifts.
   shift(today, 0);
   const day = new Date(`${today}T12:00:00Z`).getUTCDay();
