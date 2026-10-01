@@ -30,7 +30,7 @@ function nodeMilestones(milestones:NonNullable<WorkbenchData['projects'][number]
 function pageHelp(s:UIState){const closure=`闭环标准：${STATUS_LABEL[s.settings.closureStatus]}。`;return ({
   home:`${closure}预测日期以当前依赖和容量不变为前提。点击任务可查看来源、更新时间及事实 / 预测 / 判断。`,
   projects:`${closure}开发、测试、发布和验收分别记录。模块负责人是稳定责任归属，任务执行人是当前分工。`,
-  people:'所有人员负荷跨项目汇总，不受项目筛选影响。可用容量按实际日历减去请假、会议、支持和缓冲。余量仅在分配、依赖和扣减不变时成立；未知容量或未排期任务不能视为空闲。负荷不用于个人绩效排名。',
+  people:'所有人员负荷跨项目汇总。可用容量按实际日历减去请假、会议、支持和缓冲。余量仅在分配、依赖和扣减不变时成立；未知容量或未排期任务不能视为空闲。负荷不用于个人绩效排名。',
   coordination:'任务详情保留来源和更新时间。决策仅记录已确认内容，风险判断不当作已发生事实。',
   weekly:`${closure}冻结基线不随任务更新而改变。新增范围不纳入原承诺分母；预测延后与冻结时的日期比较。`
 })[s.tab];}
@@ -53,8 +53,8 @@ export function renderWorkbench(container:HTMLElement,s:UIState,a:UIActions):voi
   const toolbar=el('div','elw-toolbar');toolbar.append(button('↻',a.refresh,'elw-icon-button'),button('导入',a.import,'elw-button elw-quiet'),button('整理进展',a.progress,'elw-button elw-quiet'),button('+ 任务',a.create,'elw-button elw-primary'));toolbar.children[0].setAttribute('aria-label','刷新工作台');toolbar.children[2].setAttribute('aria-label','整理本次进展');toolbar.children[3].setAttribute('aria-label','新建任务');top.append(toolbar);main.append(top);
   const filters=el('div','elw-filters'),periodGroup=el('div','elw-period');periodGroup.append(el('span','elw-filter-label','周期'));
   for(const [key,label] of [['start','开始日期'],['end','结束日期']] as const){const input=el('input');input.type='date';input.value=s.period[key];input.setAttribute('aria-label',label);input.addEventListener('change',()=>a.period({...s.period,[key]:input.value}));periodGroup.append(input);if(key==='start')periodGroup.append(el('span','','→'));}filters.append(periodGroup);
-  const select=el('select','elw-select');select.setAttribute('aria-label','项目筛选');const all=el('option','','全部项目');all.value='';select.append(all);data.projects.forEach(p=>{const opt=el('option','',p.name);opt.value=p.id;select.append(opt);});select.value=s.project;select.addEventListener('change',()=>a.project(select.value));filters.append(select);
-  const search=el('input','elw-search');search.type='search';search.placeholder='搜索任务';search.value=s.search;search.setAttribute('aria-label','搜索任务');search.addEventListener('change',()=>a.search(search.value));search.addEventListener('keydown',e=>{if(e.key==='Enter')a.search(search.value)});filters.append(search);main.append(filters);
+  const select=el('select','elw-select');select.setAttribute('aria-label','项目筛选');const all=el('option','','全部项目');all.value='';select.append(all);data.projects.forEach(p=>{const opt=el('option','',p.name);opt.value=p.id;select.append(opt);});select.value=s.project;select.addEventListener('change',()=>a.project(select.value));if(s.tab!=='people')filters.append(select);
+  const search=el('input','elw-search');search.type='search';search.placeholder='搜索任务';search.value=s.search;search.setAttribute('aria-label','搜索任务');search.addEventListener('change',()=>a.search(search.value));search.addEventListener('keydown',e=>{if(e.key==='Enter')a.search(search.value)});if(s.tab!=='people')filters.append(search);main.append(filters);
   if(s.warnings.length){const details=el('details','elw-warning');details.append(el('summary','',`${s.warnings.length} 条数据错误，部分记录未读取`));s.warnings.forEach(w=>details.append(el('p','',w)));main.append(details);}
   if(!data.tasks.length){const box=empty(main,'暂无任务'),actions=el('div','elw-empty-actions');actions.append(button('创建虚构示例',a.demo),button('导入 CSV / JSON',a.import),button('新建任务',a.create,'elw-button elw-primary'));box.append(actions);return;}
   if(s.tab==='home'){
