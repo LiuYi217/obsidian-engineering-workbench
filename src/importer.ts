@@ -1,3 +1,4 @@
+import { validateExternalUrl } from './prototype-security';
 /** Offline import/update previews. This module never reads, writes, or calls a network. */
 import { TASK_STATUSES, isValidDate, isValidTimestamp, type Allocation, type EvidenceNote, type Task, type TaskStatus } from './domain';
 
@@ -5,7 +6,7 @@ export type ImportFormat = 'csv' | 'json';
 export interface ImportIssue { row: number; field: string; message: string }
 export interface ImportDuplicate { id: string; row: number; reason: string }
 export interface ImportPreview { format: ImportFormat; tasks: Task[]; duplicates: ImportDuplicate[]; errors: ImportIssue[]; warnings: ImportIssue[]; canApply: boolean }
-export const CSV_COLUMNS = ['id', 'title', 'project', 'module', 'executor', 'status', 'originalStart', 'originalDue', 'forecastDue', 'remainingHours', 'allocations', 'dependencies', 'nextAction', 'source', 'lastUpdated', 'risk', 'blocker', 'contact', 'coordinationDue', 'meetingIds', 'materialVersionIds', 'executors'] as const;
+export const CSV_COLUMNS = ['id', 'title', 'project', 'module', 'executor', 'status', 'originalStart', 'originalDue', 'forecastDue', 'remainingHours', 'allocations', 'dependencies', 'nextAction', 'source', 'lastUpdated', 'risk', 'blocker', 'contact', 'coordinationDue', 'meetingIds', 'materialVersionIds', 'executors', 'requirementId', 'requirementTitle', 'requirementSourceUrl'] as const;
 const TEXT_FIELDS = ['id', 'title', 'project', 'module', 'executor', 'nextAction', 'source'] as const;
 const OPTIONAL_TEXT_FIELDS = ['risk', 'blocker', 'contact'] as const;
 const ALLOWED_FIELDS = new Set<string>([...CSV_COLUMNS, 'facts', 'forecasts', 'judgments', 'path', 'executors']);
@@ -121,6 +122,16 @@ export function validateTaskRecord(record: unknown, row = 1, format: ImportForma
     }
     result[field] = ids;
   }
+  for (const field of ['requirementId', 'requirementTitle'] as const) {
+    if (record[field] === undefined || record[field] === '') continue;
+    const value = record[field];
+    if (typeof value !== 'string' || !value.trim()) { error(field, `${field} must be a nonempty string when supplied`); continue; }
+    if (field === 'requirementId' && !ID_PATTERN.test(value.trim())) { error(field, 'requirementId must be a valid stable requirement ID'); continue; }
+    result[field] = value.trim();
+  }
+  if(record.requirementSourceUrl!==undefined&&record.requirementSourceUrl!==''){try{if(typeof record.requirementSourceUrl!=='string')throw new Error('must be a URL string');result.requirementSourceUrl=validateExternalUrl(record.requirementSourceUrl);}catch(e){error('requirementSourceUrl',e instanceof Error?e.message:String(e));}}
+  if(result.requirementSourceUrl&&!result.requirementId)error('requirementSourceUrl','requirementSourceUrl requires requirementId');
+  if (result.requirementTitle && !result.requirementId) error('requirementTitle', 'requirementTitle requires requirementId; titles alone do not establish grouping');
   for (const field of OPTIONAL_TEXT_FIELDS) {
     if (record[field] === undefined || record[field] === '') continue;
     if (typeof record[field] !== 'string') error(field, `${field} must be a string`);

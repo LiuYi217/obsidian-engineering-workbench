@@ -95,6 +95,8 @@ export function makeWorkbenchFixture(today = localISODate()): WorkbenchData {
       nextAction: '确认审计字段排期',
     }),
   ];
+  for(const t of tasks){if(['demo-task-001','demo-task-003','demo-task-004'].includes(t.id)){t.requirementId='demo-requirement-access';t.requirementTitle='【虚构】统一接入需求';t.requirementSourceUrl='https://example.com/requirements/access';}else if(['demo-task-002','demo-task-005'].includes(t.id)){t.requirementId='demo-requirement-permission';t.requirementTitle='【虚构】权限控制需求';}}
+
 
   const priorReviewDate = shift(monday, -4);
   const prototype = (id: string, version: string, date: string, overrides: Partial<MaterialVersion>): MaterialVersion => ({

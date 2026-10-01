@@ -1,8 +1,12 @@
 # v0.1.0 verification record
 
+## Personnel work groups
+
+The personnel renderer now prioritizes current work grouped by project and explicit requirement ID. Tests cover external parents, project collisions, duplicate identities, unknown effort, closure thresholds, shared executors, exact pinned/contextual version links, safe source URLs and native edit/conflict preservation. The local aggregate passes **171 tests** and strict TypeScript/build; the browser suite contains **36 cases** for exact-commit CI verification. Only synthetic fixtures are used.
+
 ## Unknown task-data compatibility
 
-Empty task dates and null remaining effort are accepted without fabricated values. Co-assignees are retained without duplicating primary allocations. Incomplete schedules/estimates prevent a spare-capacity claim, including project People and weekly summaries. Regression tests cover raw Vault validation, native edit preservation and stale conflicts, JSON/CSV round trips, immutable baselines, and linked meeting dates. The local aggregate passes **137 tests**, strict TypeScript and production build. The browser suite now has **32 cases**; new compatibility cases require the exact-commit CI run. No external work records are included in fixtures.
+Empty task dates and null remaining effort are accepted without fabricated values. Co-assignees are retained without duplicating primary allocations. Incomplete schedules/estimates prevent a spare-capacity claim, including project People and weekly summaries. Regression tests cover raw Vault validation, native edit preservation and stale conflicts, JSON/CSV round trips, immutable baselines, and linked meeting dates. The local aggregate passes **137 tests**, strict TypeScript and production build. All **32 browser cases** passed for commit `4dc58228f42468e675763faf0f622951fb8a04a0` ([CI](https://github.com/LiuYi217/obsidian-engineering-workbench/actions/runs/36886277351)). No external work records are included in fixtures.
 
 ## Verified removal runtime
 

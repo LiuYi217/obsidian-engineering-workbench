@@ -32,7 +32,7 @@ export class VaultStore {
     }
   }
   async load(): Promise<WorkbenchData> {
-    const result = emptyWorkbenchData(); this.warnings = []; this.duplicateRecords=false;
+    const result = emptyWorkbenchData(); const seen = new Set<string>(); this.warnings = []; this.duplicateRecords=false;
     for (const file of this.app.vault.getMarkdownFiles().filter(f => f.path.startsWith(`${this.root}/`) && !f.path.startsWith(`${this.root}/Assets/`))) {
       try {
         const text = await this.app.vault.cachedRead(file);
@@ -44,7 +44,9 @@ export class VaultStore {
         if (!Object.prototype.hasOwnProperty.call(collection, kind)) continue;
         if (typeof fm.id !== 'string' || !fm.id.trim()) { this.warnings.push(`${file.path}：缺少字符串 id`); continue; }
         const records = result[collection[kind]] as unknown as StoredRecord[];
-        if (records.some(record => record.id === fm.id)) { this.duplicateRecords=true; this.warnings.push(`${file.path}：重复 ${kind} ID ${fm.id}，请合并重复记录；当前不读取此文件`); continue; }
+        const identity=JSON.stringify([kind,fm.id]);
+        if(seen.has(identity)){this.duplicateRecords=true;for(let i=records.length-1;i>=0;i--)if(records[i].id===fm.id)records.splice(i,1);this.warnings.push(`${file.path}：重复 ${kind} ID ${fm.id}，请合并重复记录；该身份的全部记录暂不读取`);continue;}
+        seen.add(identity);
         const record = { ...fm, path: file.path } as StoredRecord; delete record.workbench;
         const errors = validateManagedRecord(kind, record);
         if (errors.length) throw new Error(errors.join('; '));
@@ -57,6 +59,8 @@ export class VaultStore {
   async create(kind: RecordKind, record: object, body = ''): Promise<TFile> {
     const value = { ...record } as StoredRecord; delete value.path;
     const errors = validateManagedRecord(kind, value); if (errors.length) throw new Error(errors.join('; '));
+    const existing=await this.load();if(this.duplicateRecords)throw new Error('存在重复记录身份，请先处理后再创建；未写入');
+    if((existing[collection[kind]] as unknown as StoredRecord[]).some(item=>item.id===value.id))throw new Error(`${value.id} 已存在，未覆盖原文件`);
     const folder = `${this.root}/${folders[kind]}`; await this.ensureFolder(folder);
     const path = `${folder}/${safeFileName(value.id)}.md`;
     if (this.app.vault.getAbstractFileByPath(path)) throw new Error(`${value.id} 已存在，未覆盖原文件`);
@@ -117,6 +121,7 @@ export class VaultStore {
     return this.serial(async()=>{
     const root = this.root;
     const data = await this.load();
+    if(this.duplicateRecords)throw new Error('存在重复记录身份，请先处理后再保存资料；未复制文件');
     // Revalidate a copied byte plan at the write boundary; previews never write.
     const checked = plan ? inspectPrototypeFiles(plan.files,plan.directories) : undefined;
     const packagePath = this.assetRoot(version.id);
@@ -147,7 +152,7 @@ export class VaultStore {
     if (original && originalName) await put(`${packagePath}/original/${originalName}`, original.bytes);
     if (checked) for (const file of checked.files){await put(`${packagePath}/files/${file.path}`, file.bytes);copied++;}
     if (root !== this.root) throw new Error('数据目录在保存期间发生变化；已复制文件保留，请检查后重试');
-    createMaterialVersion(await this.load(),candidate);
+    const fresh=await this.load();if(this.duplicateRecords)throw new Error('存在重复记录身份，请先处理后重试');createMaterialVersion(fresh,candidate);
     return await this.create('material-version', snapshot, '# 资料版本\n\n此记录只新增，不覆盖。采纳记录与任务引用分别保存。\n');
     }catch(error){throw new Error(`保存未完成，已核对/复制 ${copied} 个文件；已有文件保留，重试会核对内容而不覆盖。${error instanceof Error?error.message:String(error)}`);}
     });

@@ -80,3 +80,27 @@ test('unknown imported work stays visible without inventing dates, effort or spa
  await page.goto('/?tab=projects&unknown=1');await page.getByRole('button',{name:'详情 →',exact:true}).first().click();await page.getByRole('navigation',{name:'项目详情'}).getByRole('button',{name:'人员',exact:true}).click();await expect(page.getByText('余量待确认',{exact:true})).toHaveCount(2);
  await page.goto('/?tab=meetings&unknown=1');const action=page.locator('.elw-meeting-action');await expect(action).toContainText('虚构甲、虚构乙');await expect(action).toContainText('未定日期');await expect(action).not.toContainText('2099-12-31');await expect(action).not.toContainText('old-owner');expect(errors).toEqual([]);
 });
+
+test('people show current work grouped by requirement with direct exact source links and retained history',async({page},testInfo)=>{
+ await page.goto('/?tab=people');
+ const member=page.locator('.elw-person').filter({has:page.getByRole('heading',{name:'成员甲',exact:true})});
+ const group=member.locator(':scope > .elw-work-group[data-requirement="demo-requirement-access"]');
+ await expect(group.getByRole('heading',{name:'【虚构】统一接入需求',exact:true})).toBeVisible();
+ await expect(group.getByRole('button',{name:'【虚构】对接协议确认',exact:true})).toBeVisible();await expect(group.getByRole('button',{name:'【虚构】接入联调',exact:true})).toBeVisible();
+ await expect(member.getByRole('button',{name:'【虚构】网关接口回归',exact:true})).not.toBeVisible();
+ const prototype=group.getByRole('button',{name:'原型 · 【虚构】星桥接入原型 · v0.2',exact:true});await expect(prototype).toBeVisible();await expect(group.getByRole('button',{name:/v0.3/})).toHaveCount(0);
+ await prototype.click();await expect(page.getByRole('dialog')).toContainText('demo-prototype-v2');await page.getByRole('button',{name:'关闭',exact:true}).click();
+ await group.getByRole('button',{name:/^会议 ·/}).first().click();await expect(page.getByRole('dialog')).toContainText('demo-meeting-001');await page.getByRole('button',{name:'关闭',exact:true}).click();
+ await group.getByRole('button',{name:'打开需求来源 【虚构】统一接入需求',exact:true}).click();await expect(page.getByRole('dialog')).toContainText('https://example.com/requirements/access');await page.getByRole('button',{name:'关闭',exact:true}).click();
+ await group.getByRole('button',{name:'【虚构】接入联调',exact:true}).click();await expect(page.getByRole('dialog')).toContainText('demo-task-004');await page.getByRole('button',{name:'关闭',exact:true}).click();
+ await member.locator('.elw-work-history > summary').click();await expect(member.getByRole('button',{name:'【虚构】网关接口回归',exact:true})).toBeVisible();await member.locator('.elw-work-history > summary').click();
+ await expect(page.getByRole('button',{name:'【虚构】权限策略开发',exact:true})).toBeVisible();
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1)).toBeTruthy();await page.screenshot({path:testInfo.outputPath(`${testInfo.project.name}-person-work-groups.png`),fullPage:true});
+});
+test('people filters find people and requirement groups without losing ungrouped tasks',async({page})=>{
+ await page.goto('/?tab=people');const search=()=>page.getByRole('searchbox',{name:'搜索人员或工作项'});
+ await search().fill('成员甲');await search().press('Enter');await expect(page.locator('.elw-person')).toHaveCount(1);await expect(page.getByRole('button',{name:'【虚构】接入联调',exact:true})).toBeVisible();
+ await search().fill('权限控制需求');await search().press('Enter');await expect(page.getByRole('heading',{name:'【虚构】权限控制需求',exact:true})).toBeVisible();
+ await search().fill('');await search().press('Enter');await page.getByRole('combobox',{name:'项目筛选'}).selectOption('demo-project-cloudsail');await expect(page.locator('.elw-person')).toHaveCount(2);await expect(page.getByRole('button',{name:'【虚构】导出异常处理',exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:'未分组',exact:true}).first()).toBeVisible();
+ await search().fill('no-such-person-or-work');await search().press('Enter');await expect(page.getByText('暂无匹配人员或工作项',{exact:true})).toBeVisible();
+});

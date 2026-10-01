@@ -16,6 +16,8 @@ export interface Task {
   facts?: EvidenceNote[]; forecasts?: EvidenceNote[]; judgments?: EvidenceNote[];
   /** Explicit source links. Material IDs pin exact immutable version records, never the latest version. */
   meetingIds?: string[]; materialVersionIds?: string[]; executors?: string[];
+  /** Explicit project-scoped requirement grouping; the parent may live outside this Vault. */
+  requirementId?: string; requirementTitle?: string; requirementSourceUrl?: string;
 }
 export interface Milestone { id: string; title: string; date: string; status?: 'planned' | 'completed'; source?: string }
 export interface Project { id: string; name: string; owner?: string; targetDate?: string; milestones?: Milestone[]; description?: string; source?: string; path?: string }
@@ -211,7 +213,7 @@ export function generateBaseline(tasks: readonly Task[], options: { id: string; 
   if (new Set(tasks.map(task => task.id)).size !== tasks.length) throw new RangeError('Cannot freeze a baseline with duplicate task IDs');
   return deepFreeze({ schemaVersion: 1 as const, ...clone(options), tasks: clone(tasks.filter(task => !options.period || taskTouchesPeriod(task, options.period)).sort(byId)) });
 }
-const BASELINE_FIELDS: (keyof Task)[] = ['title', 'project', 'module', 'executor', 'executors', 'status', 'originalStart', 'originalDue', 'forecastDue', 'remainingHours', 'allocations', 'dependencies', 'nextAction', 'risk', 'blocker', 'contact', 'coordinationDue', 'meetingIds', 'materialVersionIds'];
+const BASELINE_FIELDS: (keyof Task)[] = ['title', 'project', 'module', 'executor', 'executors', 'requirementId', 'requirementTitle', 'requirementSourceUrl', 'status', 'originalStart', 'originalDue', 'forecastDue', 'remainingHours', 'allocations', 'dependencies', 'nextAction', 'risk', 'blocker', 'contact', 'coordinationDue', 'meetingIds', 'materialVersionIds'];
 function stableValue(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(stableValue).join(',')}]`;
   if (value && typeof value === 'object') return `{${Object.entries(value).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0).map(([key, item]) => `${JSON.stringify(key)}:${stableValue(item)}`).join(',')}}`;

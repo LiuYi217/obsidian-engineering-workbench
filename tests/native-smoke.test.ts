@@ -217,3 +217,29 @@ test('native store round-trips unknown values and detects a concurrent co-assign
  await assert.rejects(store.updateTask(loaded,{executors:['person-d']}),/executors/);
  assert(file.content.includes('User-authored body stays intact'));assert.equal(JSON.parse(frontmatter(file.content).frontmatter).custom,'preserve');assert.equal(files.size,1);
 });
+
+
+test('native requirement fields preserve external parent metadata and clear it only on explicit save',async()=>{
+ const t={...sample(),requirementId:'fixture-parent',requirementTitle:'合成父需求',requirementSourceUrl:'https://example.com/requirements/fixture-parent'};const updates:Partial<Task>[]=[];
+ const plugin={app:{},data:{tasks:[t],projects:[]},period:{start:'2026-09-28',end:'2026-10-04'},store:{updateTask:async(_task:Task,value:Partial<Task>)=>{updates.push(value)}},reload:async()=>{}};
+ const cancelled=new native.TaskModal(plugin,t);cancelled.onOpen();assert.equal(control(cancelled,'所属需求 ID').value,'fixture-parent');click(cancelled,'取消');await flush();assert.equal(updates.length,0);
+ const clear=new native.TaskModal(plugin,t);clear.onOpen();for(const label of ['所属需求 ID','所属需求名称','需求来源链接'])control(clear,label).value='';click(clear,'确认更新共享记录');await flush();assert.equal(updates.length,1);for(const field of ['requirementId','requirementTitle','requirementSourceUrl'] as const){assert(Object.prototype.hasOwnProperty.call(updates[0],field));assert.equal(updates[0][field],undefined);}
+ assert.equal(t.requirementId,'fixture-parent');assert.equal(t.requirementSourceUrl,'https://example.com/requirements/fixture-parent');
+});
+
+
+test('native store removes all ambiguous identities before requirement and source joins without touching notes',async()=>{
+ const {store,files}=host();const fixture=makeWorkbenchFixture('2026-10-01');
+ const entries:[string,object][]=[['task',{...sample('fixture-parent'),title:'first parent'}],['meeting',fixture.meetings![0]],['material-version',fixture.materialVersions![0]]];
+ const originals=new Map<string,string>();const seeded=[];for(const [kind,record]of entries)seeded.push(await store.create(kind,record));
+ for(const file of seeded){originals.set(file.path,file.content);const duplicate=new FileStub(file.path.replace(/\.md$/,'-duplicate.md'),file.content.replace('first parent','second parent'));files.set(duplicate.path,duplicate);originals.set(duplicate.path,duplicate.content);}
+ const data=await store.load();assert.equal(data.tasks.length,0);assert.equal(data.meetings.length,0);assert.equal(data.materialVersions.length,0);assert.equal(store.warnings.filter((w:string)=>w.includes('全部记录暂不读取')).length,3);
+ for(const [path,body]of originals)assert.equal(files.get(path)!.content,body);
+});
+
+
+test('native create rejects renamed duplicate identities rather than adding a third record',async()=>{
+ const {store,files}=host();const t=sample('fixture-collision');const first=await store.create('task',t);files.delete(first.path);files.set('Workbench/Tasks/renamed-one.md',new FileStub('Workbench/Tasks/renamed-one.md',first.content));files.set('Workbench/Tasks/renamed-two.md',new FileStub('Workbench/Tasks/renamed-two.md',first.content));
+ await assert.rejects(store.create('task',t),/重复记录身份/);await assert.rejects(store.create('task',sample('new-id')),/重复记录身份/);assert.equal(files.size,2);
+ files.delete('Workbench/Tasks/renamed-two.md');await assert.rejects(store.create('task',t),/已存在/);assert.equal(files.size,1);
+});
