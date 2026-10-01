@@ -1,0 +1,25 @@
+{
+  "name": "engineering-lead-workbench",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local-first engineering lead workbench for Obsidian",
+  "license": "MIT",
+  "scripts": {
+    "dev": "node esbuild.config.mjs",
+    "build": "tsc --noEmit && node esbuild.config.mjs production",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test tests/*.test.ts",
+    "package": "npm run build && node scripts/package.mjs",
+    "check": "npm run typecheck && npm test && npm run build",
+    "preview:build": "node scripts/build-preview.mjs",
+    "test:browser": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "@types/node": "^22.10.0",
+    "esbuild": "^0.25.0",
+    "obsidian": "^1.8.7",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  }
+}

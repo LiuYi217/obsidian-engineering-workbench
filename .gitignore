@@ -1,0 +1,9 @@
+node_modules/
+.obsidian/
+.DS_Store
+coverage/
+*.log
+.preview/
+release/
+test-results/
+playwright-report/

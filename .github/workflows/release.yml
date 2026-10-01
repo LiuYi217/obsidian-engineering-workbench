@@ -1,0 +1,29 @@
+name: Release
+on:
+  push:
+    tags: ['0.*', '1.*']
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: node -e "const m=require('./manifest.json');if(process.env.GITHUB_REF_NAME!==m.version)throw new Error('Tag must match manifest.version exactly')"
+      - run: npm run package
+      - uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          generate_release_notes: true
+          files: |
+            release/main.js
+            release/manifest.json
+            release/styles.css
+            release/*.zip
+            release/SHA256SUMS.txt

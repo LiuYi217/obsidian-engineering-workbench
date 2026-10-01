@@ -1,0 +1,309 @@
+[
+  {
+    "id": "demo-task-001",
+    "title": "【虚构】网关接口回归",
+    "project": "demo-project-starbridge",
+    "module": "demo-module-gateway",
+    "executor": "demo-person-jia",
+    "status": "test-passed",
+    "originalStart": "2026-09-28",
+    "originalDue": "2026-10-02",
+    "forecastDue": "2026-10-02",
+    "remainingHours": 0,
+    "allocations": [],
+    "dependencies": [],
+    "nextAction": "准备发布检查，不将测试通过写成已发布",
+    "source": "虚构演示数据（本地生成，无外部系统来源）",
+    "lastUpdated": "2026-10-01T09:00:00Z",
+    "facts": [
+      {
+        "text": "虚构测试用例已通过；尚未发布",
+        "source": "虚构演示数据（本地生成，无外部系统来源）",
+        "recordedAt": "2026-10-01T09:00:00Z"
+      }
+    ]
+  },
+  {
+    "id": "demo-task-002",
+    "title": "【虚构】权限策略开发",
+    "project": "demo-project-starbridge",
+    "module": "demo-module-auth",
+    "executor": "demo-person-yi",
+    "status": "dev-complete",
+    "originalStart": "2026-09-28",
+    "originalDue": "2026-10-02",
+    "forecastDue": "2026-10-02",
+    "remainingHours": 8,
+    "allocations": [
+      {
+        "periodStart": "2026-09-28",
+        "periodEnd": "2026-10-04",
+        "hours": 8
+      }
+    ],
+    "dependencies": [
+      "demo-task-001"
+    ],
+    "nextAction": "补充边界用例并安排测试",
+    "source": "虚构演示数据（本地生成，无外部系统来源）",
+    "lastUpdated": "2026-10-01T09:00:00Z",
+    "facts": [
+      {
+        "text": "全部为虚构演示数据，不代表真实项目、人员、工时或绩效",
+        "source": "虚构演示数据（本地生成，无外部系统来源）",
+        "recordedAt": "2026-10-01T09:00:00Z"
+      }
+    ],
+    "forecasts": [
+      {
+        "text": "若测试资源按期到位，预计本周期完成测试；未承诺发布日期",
+        "source": "虚构演示数据（本地生成，无外部系统来源）",
+        "recordedAt": "2026-10-01T09:00:00Z"
+      }
+    ]
+  },
+  {
+    "id": "demo-task-003",
+    "title": "【虚构】对接协议确认",
+    "project": "demo-project-starbridge",
+    "module": "demo-module-gateway",
+    "executor": "demo-person-jia",
+    "status": "blocked",
+    "originalStart": "2026-09-21",
+    "originalDue": "2026-09-30",
+    "forecastDue": "2026-10-09",
+    "remainingHours": 16,
+    "allocations": [
+      {
+        "periodStart": "2026-09-28",
+        "periodEnd": "2026-10-04",
+        "hours": 16
+      }
+    ],
+    "dependencies": [],
+    "nextAction": "请虚构协作方甲确认字段清单并给出更新时间",
+    "source": "虚构演示数据（本地生成，无外部系统来源）",
+    "lastUpdated": "2026-10-01T09:00:00Z",
+    "facts": [
+      {
+        "text": "全部为虚构演示数据，不代表真实项目、人员、工时或绩效",
+        "source": "虚构演示数据（本地生成，无外部系统来源）",
+        "recordedAt": "2026-10-01T09:00:00Z"
+      }
+    ],
+    "contact": "虚构协作方甲",
+    "coordinationDue": "2026-09-30",
+    "blocker": "虚构协作方尚未确认接口字段",
+    "risk": "字段未确认会影响接入联调"
+  },
+  {
+    "id": "demo-task-004",
+    "title": "【虚构】接入联调",
+    "project": "demo-project-starbridge",
+    "module": "demo-module-gateway",
+    "executor": "demo-person-jia",
+    "status": "in-progress",
+    "originalStart": "2026-09-28",
+    "originalDue": "2026-10-02",
+    "forecastDue": "2026-10-09",
+    "remainingHours": 20,
+    "allocations": [
+      {
+        "periodStart": "2026-09-28",
+        "periodEnd": "2026-10-04",
+        "hours": 20
+      }
+    ],
+    "dependencies": [
+      "demo-task-003"
+    ],
+    "nextAction": "先完成可独立验证的适配器；等待协议确认后再联调",
+    "source": "虚构演示数据（本地生成，无外部系统来源）",
+    "lastUpdated": "2026-10-01T09:00:00Z",
+    "facts": [
+      {
+        "text": "全部为虚构演示数据，不代表真实项目、人员、工时或绩效",
+        "source": "虚构演示数据（本地生成，无外部系统来源）",
+        "recordedAt": "2026-10-01T09:00:00Z"
+      }
+    ],
+    "risk": "依赖任务阻塞；本周期排入负荷高于已知容量",
+    "forecasts": [
+      {
+        "text": "仅在协议及时确认且容量不再减少时，才可能在下周完成",
+        "source": "虚构演示数据（本地生成，无外部系统来源）",
+        "recordedAt": "2026-10-01T09:00:00Z"
+      }
+    ]
+  },
+  {
+    "id": "demo-task-005",
+    "title": "【虚构】组件说明补齐",
+    "project": "demo-project-starbridge",
+    "module": "demo-module-auth",
+    "executor": "demo-person-yi",
+    "status": "planned",
+    "originalStart": "2026-09-28",
+    "originalDue": "2026-10-02",
+    "forecastDue": "2026-10-02",
+    "remainingHours": 6,
+    "allocations": [
+      {
+        "periodStart": "2026-09-28",
+        "periodEnd": "2026-10-04",
+        "hours": 6
+      }
+    ],
+    "dependencies": [],
+    "nextAction": "核对停滞记录是否仍有效；确认后再更新状态",
+    "source": "虚构演示数据（本地生成，无外部系统来源）",
+    "lastUpdated": "2026-09-19T09:00:00Z",
+    "facts": [
+      {
+        "text": "全部为虚构演示数据，不代表真实项目、人员、工时或绩效",
+        "source": "虚构演示数据（本地生成，无外部系统来源）",
+        "recordedAt": "2026-10-01T09:00:00Z"
+      }
+    ]
+  },
+  {
+    "id": "demo-task-006",
+    "title": "【虚构】检索索引发布",
+    "project": "demo-project-cloudsail",
+    "module": "demo-module-search",
+    "executor": "demo-person-bing",
+    "status": "released",
+    "originalStart": "2026-09-28",
+    "originalDue": "2026-10-02",
+    "forecastDue": "2026-10-02",
+    "remainingHours": 0,
+    "allocations": [],
+    "dependencies": [],
+    "nextAction": "收集验收反馈；发布不等于业务验收",
+    "source": "虚构演示数据（本地生成，无外部系统来源）",
+    "lastUpdated": "2026-10-01T09:00:00Z",
+    "facts": [
+      {
+        "text": "虚构版本已发布，但业务验收尚未记录",
+        "source": "虚构演示数据（本地生成，无外部系统来源）",
+        "recordedAt": "2026-10-01T09:00:00Z"
+      }
+    ]
+  },
+  {
+    "id": "demo-task-007",
+    "title": "【虚构】导出模板验收",
+    "project": "demo-project-cloudsail",
+    "module": "demo-module-export",
+    "executor": "demo-person-bing",
+    "status": "accepted",
+    "originalStart": "2026-09-28",
+    "originalDue": "2026-10-02",
+    "forecastDue": "2026-10-02",
+    "remainingHours": 0,
+    "allocations": [],
+    "dependencies": [],
+    "nextAction": "整理本地验收记录",
+    "source": "虚构演示数据（本地生成，无外部系统来源）",
+    "lastUpdated": "2026-10-01T09:00:00Z",
+    "facts": [
+      {
+        "text": "虚构验收记录已确认",
+        "source": "虚构演示数据（本地生成，无外部系统来源）",
+        "recordedAt": "2026-10-01T09:00:00Z"
+      }
+    ]
+  },
+  {
+    "id": "demo-task-008",
+    "title": "【虚构】导出异常处理",
+    "project": "demo-project-cloudsail",
+    "module": "demo-module-export",
+    "executor": "demo-person-ding",
+    "status": "in-progress",
+    "originalStart": "2026-09-28",
+    "originalDue": "2026-10-02",
+    "forecastDue": "2026-10-02",
+    "remainingHours": 14,
+    "allocations": [
+      {
+        "periodStart": "2026-09-28",
+        "periodEnd": "2026-10-04",
+        "hours": 14
+      }
+    ],
+    "dependencies": [],
+    "nextAction": "先向成员丁确认容量；不可将缺失容量解释为空闲",
+    "source": "虚构演示数据（本地生成，无外部系统来源）",
+    "lastUpdated": "2026-10-01T09:00:00Z",
+    "facts": [
+      {
+        "text": "全部为虚构演示数据，不代表真实项目、人员、工时或绩效",
+        "source": "虚构演示数据（本地生成，无外部系统来源）",
+        "recordedAt": "2026-10-01T09:00:00Z"
+      }
+    ],
+    "risk": "容量资料缺失，不能判断能否承诺交付"
+  },
+  {
+    "id": "demo-task-009",
+    "title": "【虚构】本周新增检索筛选",
+    "project": "demo-project-cloudsail",
+    "module": "demo-module-search",
+    "executor": "demo-person-bing",
+    "status": "planned",
+    "originalStart": "2026-09-28",
+    "originalDue": "2026-10-02",
+    "forecastDue": "2026-10-02",
+    "remainingHours": 12,
+    "allocations": [
+      {
+        "periodStart": "2026-09-28",
+        "periodEnd": "2026-10-04",
+        "hours": 12
+      }
+    ],
+    "dependencies": [],
+    "nextAction": "确认新增范围与原计划的取舍",
+    "source": "虚构演示数据（本地生成，无外部系统来源）",
+    "lastUpdated": "2026-10-01T09:00:00Z",
+    "facts": [
+      {
+        "text": "全部为虚构演示数据，不代表真实项目、人员、工时或绩效",
+        "source": "虚构演示数据（本地生成，无外部系统来源）",
+        "recordedAt": "2026-10-01T09:00:00Z"
+      }
+    ],
+    "judgments": [
+      {
+        "text": "虚构判断：新增范围需要显式讨论，不应回写覆盖原基线",
+        "source": "虚构演示数据（本地生成，无外部系统来源）",
+        "recordedAt": "2026-10-01T09:00:00Z"
+      }
+    ]
+  },
+  {
+    "id": "demo-task-010",
+    "title": "【虚构】尚未排期的审计字段",
+    "project": "demo-project-starbridge",
+    "module": "demo-module-auth",
+    "executor": "demo-person-yi",
+    "status": "planned",
+    "originalStart": "2026-09-28",
+    "originalDue": "2026-10-02",
+    "forecastDue": "2026-10-02",
+    "remainingHours": 10,
+    "allocations": [],
+    "dependencies": [],
+    "nextAction": "明确周期排入工时，不能把全部剩余工时自动当成本周负荷",
+    "source": "虚构演示数据（本地生成，无外部系统来源）",
+    "lastUpdated": "2026-10-01T09:00:00Z",
+    "facts": [
+      {
+        "text": "全部为虚构演示数据，不代表真实项目、人员、工时或绩效",
+        "source": "虚构演示数据（本地生成，无外部系统来源）",
+        "recordedAt": "2026-10-01T09:00:00Z"
+      }
+    ]
+  }
+]

@@ -1,0 +1,10 @@
+{
+  "id": "engineering-lead-workbench",
+  "name": "Engineering Lead Workbench",
+  "version": "0.1.0",
+  "minAppVersion": "1.5.0",
+  "description": "Turn shared Markdown records into project, capacity, coordination and weekly planning views with source-backed summaries.",
+  "author": "LiuYi217",
+  "isDesktopOnly": false,
+  "authorUrl": "https://github.com/LiuYi217"
+}
