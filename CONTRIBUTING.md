@@ -26,4 +26,4 @@ Use small, focused pull requests and add regression tests for fixes. Record prec
 
 ## Releases
 
-Tags must match `manifest.json` exactly, for example `0.1.0` (no `v` prefix). The release workflow checks, packages, and creates a **draft** GitHub release. Review its assets and verification notes before publishing. GitHub publication is separate from acceptance into Obsidian's community directory.
+Tags must match `manifest.json` exactly, for example `0.1.0` (no `v` prefix). The release workflow checks, packages, and publishes a **prerelease** on an explicitly pushed version tag. Review the assets, verification notes and CI result before creating a release tag. GitHub publication is separate from acceptance into Obsidian's community directory.
